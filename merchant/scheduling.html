@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><head><base href="/merchant/"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>门店工作台 · 晓艾</title><link rel="stylesheet" href="merchant.css"></head>
+<body><header><strong>晓艾 · 门店工作台</strong><nav><a id="customer">顾客端</a><a id="apply">门店入驻</a></nav></header>
+<main><h1>门店管理</h1><div class="toolbar"><label>当前门店 <select id="stores"></select></label><button id="refresh">刷新</button></div><p id="message" role="status"></p>
+<div id="workspace" hidden><section><div class="heading"><h2>门店预约</h2><span id="count"></span></div><div id="appointments"></div></section>
+<section><div class="heading"><h2>技师与排班</h2><button id="add">新增技师</button></div><div id="staff"></div></section><section><h2>本店候补</h2><div id="waiting"></div></section><section><h2>活动名额</h2><div id="activities"></div></section></div></main>
+<dialog id="editor" aria-labelledby="editorTitle"><form id="form"><h2 id="editorTitle">编辑技师</h2><div class="fields"><label>姓名<input id="staffName" maxlength="40" required></label><label>职称<input id="title" required maxlength="100"></label></div><label><input id="enabled" type="checkbox"> 启用技师</label><h3>每周可约时段</h3><p>使用默认时段，或自选时段。自选时全部取消表示当天休息。</p><div id="days"></div><p id="error" role="alert"></p><footer><button type="button" id="close">取消</button><button class="primary">保存技师</button></footer></form></dialog>
+<script src="../js/core.js"></script><script src="../js/product-pricing.js"></script><script src="../js/product-seed.js"></script><script src="../js/data.js"></script><script src="../js/operations-client.js"></script><script src="merchant.js"></script></body></html>

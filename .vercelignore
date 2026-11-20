@@ -1,0 +1,7 @@
+.tools/
+.env*
+.git/
+.DS_Store
+
+merchant-mini/
+scripts/local-*.mjs

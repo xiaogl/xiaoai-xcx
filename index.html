@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="img-src 'self' blob: data:; object-src 'none'; frame-src 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>晓艾小程序 · 交互原型</title>
+<link rel="stylesheet" href="css/app.css?v=1120-align-a1">
+</head>
+<body>
+<div class="stage">
+  <!-- 桌面端左侧：原型导览（手机访问时隐藏） -->
+  <aside class="guide" id="guide"></aside>
+
+  <!-- 手机框 -->
+  <div class="phone-box">
+  <div class="phone">
+    <div class="app" id="app">
+      <div class="statusbar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="sb-icons">
+          <svg viewBox="0 0 18 12" width="18" height="12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg viewBox="0 0 26 12" width="26" height="12"><rect x="0.5" y="0.5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="19" height="8" rx="2"/><rect x="24" y="4" width="2" height="4" rx="1" opacity=".45"/></svg>
+        </span>
+      </div>
+      <header class="nav" id="nav"></header>
+      <!-- 小程序右上角胶囊 -->
+      <div class="capsule" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="1.8"/></svg>
+        <i></i>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <main class="view" id="view"></main>
+      <button class="cart-reminder" id="cart-reminder" data-go="cart" hidden></button>
+      <div class="footer" id="footer"></div>
+      <nav class="tabbar" id="tabbar"></nav>
+      <div id="overlay"></div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script src="js/core.js?v=1119-type31"></script>
+<script src="js/prototype-media.js"></script>
+<script src="js/product-pricing.js"></script><script src="js/product-seed.js"></script><script src="js/data.js?v=1119-loc-a1"></script>
+<script src="js/operations-client.js?v=1119-store-a1"></script>
+<script src="js/metro-lines.js?v=1120-near-a1"></script>
+<script src="js/pages-home.js?v=1119-loc-a1"></script>
+<script src="js/body-atlas.js?v=1110-atlas-course"></script>
+<script src="js/pages-tools.js?v=1119-type23"></script>
+<script src="js/pages-feed.js?v=1120-hot-a2"></script>
+<script src="js/pages-shop.js?v=1119-type19"></script>
+<script src="js/pages-store.js?v=1120-hot-a1"></script>
+<script src="js/pages-bills.js?v=1119-type16"></script>
+<script src="js/pages-me.js?v=1119-store-a1"></script>
+<script src="js/pages-wallet.js?v=1119-type16"></script>
+<script src="js/pages-growth.js?v=1119-type15"></script>
+<script src="js/app.js?v=1119-loc-a1"></script>
+</body>
+</html>

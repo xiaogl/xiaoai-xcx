@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <base href="/admin/">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>晓艾运营中台 · 业务管理系统</title>
+  <link rel="stylesheet" href="vendor/quill/snow.css">
+  <link rel="stylesheet" href="css/admin.css?v=20261114d">
+  <link rel="stylesheet" href="css/operations.css?v=20261114d">
+</head>
+<body>
+  <div class="admin-shell" id="adminShell">
+    <!-- 左侧导航栏 -->
+    <aside class="rail" id="rail"></aside>
+
+    <!-- 主工作区：严格锁定 100vh，无网页上下滚动 -->
+    <div class="main-stage">
+      <!-- 顶部全局指令与操作栏 -->
+      <header class="topbar" id="topbar"></header>
+
+      <!-- 核心单屏工作台画布（各系统独立子路由与平铺面板） -->
+      <main class="workspace" id="workspace" aria-live="polite"></main>
+    </div>
+
+    <!-- 右侧小程序实时预览抽屉（同屏验证配置效果） -->
+    <aside class="preview-dock" id="previewDock" hidden>
+      <div class="pd-head">
+        <div class="row gap8">
+          <span class="logo-dot sm">艾</span>
+          <div>
+            <b>小程序实时预览</b>
+            <span class="tiny faint">后台修改后实时更新</span>
+          </div>
+        </div>
+        <div class="row gap6">
+          <button class="btn-chip" id="pdReloadBtn" title="刷新页面">刷新</button>
+          <a class="btn-chip" href="../index.html" target="_blank" rel="noopener">新窗口</a>
+          <button class="icon-btn" id="pdCloseBtn" aria-label="关闭预览">✕</button>
+        </div>
+      </div>
+      <div class="pd-route-bar" id="pdRouteBar"></div>
+      <div class="pd-frame-wrap">
+        <iframe id="xcxFrame" src="../index.html" title="晓艾小程序实时预览"></iframe>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 全局快捷指令与速查面板 (⌘K / Ctrl+K) -->
+  <div class="cmd-backdrop" id="cmdModal" hidden>
+    <div class="cmd-dialog">
+      <div class="cmd-input-row">
+        <span class="cmd-ic" id="cmdSearchIcon"></span>
+        <input type="search" id="cmdInput" placeholder="全局搜索：商品名称、订单编号、门店、会员手机号、售后单或操作指令… (Enter 快速直达)" autocomplete="off">
+        <kbd>ESC</kbd>
+      </div>
+      <div class="cmd-results" id="cmdResults"></div>
+    </div>
+  </div>
+
+  <!-- 通用新增/编辑/确认对话框 (Modal) -->
+  <div class="adm-modal-backdrop" id="admModal" hidden>
+    <div class="adm-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="admModalTitle">
+      <div class="adm-modal-hd">
+        <b id="admModalTitle">弹窗标题</b>
+        <button class="icon-btn" onclick="ADM.modal.close()" aria-label="关闭">✕</button>
+      </div>
+      <div class="adm-modal-bd" id="admModalBody"></div>
+      <div class="adm-modal-ft" id="admModalFoot">
+        <button class="btn-adm outline" onclick="ADM.modal.close()">取消</button>
+        <button class="btn-adm primary" id="admModalSubmit">确认保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轻量通知气泡 -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <!-- 基础库与同源数据载入 -->
+  <script src="../js/core.js"></script>
+  <script src="../js/prototype-media.js"></script>
+<script src="../js/product-pricing.js"></script><script src="../js/product-seed.js"></script><script src="../js/data.js"></script>
+  <script src="../js/metro-lines.js"></script>
+  <script src="../js/operations-client.js"></script>
+  <script src="js/store-bridge.js?v=20261114d"></script>
+  <script src="js/views-ops.js?v=20261114d"></script>
+  <script src="js/views-domain.js?v=20261114d"></script>
+  <script src="js/app.js?v=20261114d"></script>
+  <script src="js/ext-engine.js?v=20261114d"></script>
+  <script src="vendor/quill/quill.js"></script>
+  <script src="js/workflows.js?v=20261114d"></script>
+  <script src="js/staff.js"></script>
+  <script src="js/operations.js?v=20261114d"></script>
+</body>
+</html>

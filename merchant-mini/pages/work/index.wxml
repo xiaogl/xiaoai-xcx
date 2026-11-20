@@ -1,0 +1,6 @@
+<view class="page"><text class="error" wx:if="{{error}}">{{error}}</text><block wx:if="{{ready}}"><view class="hero"><text>{{role}}工作台</text><view class="title">{{store}}</view><text>累计服务提成　¥{{commission}}</text></view>
+<view class="tabs"><button wx:for="{{tabs}}" wx:key="*this" data-tab="{{item}}" bindtap="select" class="{{tab===item?'active':''}}">{{item}}</button></view>
+<block wx:if="{{tab==='服务'}}"><view class="card" wx:for="{{visits}}" wx:key="id"><text>{{item.title}} · {{item.status}}</text><view>{{item.customerName}}　{{item.room}}　{{item.workerName}}</view><view>{{item.note}}</view><button wx:if="{{item.status==='服务中'}}" data-id="{{item.id}}" bindtap="finish">结束服务</button></view><view wx:if="{{!visits.length}}">暂无服务单</view></block>
+<block wx:if="{{tab==='预约'}}"><view class="card" wx:for="{{appointments}}" wx:key="id">{{item.date}} {{item.time}}　{{item.serviceName}}<view>{{item.staffName}} · {{item.stateName}}</view></view><view wx:if="{{!appointments.length}}">暂无预约</view></block>
+<block wx:if="{{tab==='排班'}}"><view class="card" wx:for="{{shifts}}" wx:key="id">{{item.name}}<view class="days">{{item.days}}</view></view></block>
+<view class="card" wx:if="{{tab==='经营'}}">累计实收　¥{{income}}<view>累计支出　¥{{expense}}</view></view></block></view>

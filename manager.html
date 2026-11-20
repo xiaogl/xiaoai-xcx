@@ -1,0 +1,50 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="img-src 'self'; object-src 'none'; frame-src 'none'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>晓艾店长端</title><link rel="stylesheet" href="css/app.css?v=1110-release2"><style>
+body{background:#f0f4f1}.manager{max-width:420px;min-height:100vh;margin:auto;background:#f7f9f7;padding:24px 16px}.manager header{display:flex;justify-content:space-between;align-items:center;color:#285941}.manager section{margin-top:24px}.manager form{margin-top:20px}.manager h1{font-size:1.4rem}.manager h2{font-size:1rem}.manager label[hidden]{display:none}
+</style></head><body><main class="manager"><header><b>晓艾店长端</b><button id="back" class="link">返回晓艾</button></header><section class="card"><h1 id="title"></h1><h2 id="target"></h2><form class="partner-form" style="display:none"><label>门店名称<input name="store" class="input" maxlength="60" required></label><label>城市<input name="city" class="input" maxlength="30" required></label><label>行政区<input name="district" class="input" maxlength="30" required></label><label>门店地址<input name="address" class="input" maxlength="120" required></label><label>联系人<input name="contact" class="input" maxlength="32" required></label><label>手机号<input name="phone" type="tel" pattern="1[0-9]{10}" class="input" required></label><small>提交后可在此设备查看审核结果</small><button class="btn btn-primary">提交申请</button></form><p role="status" id="result"></p></section></main>
+<script src="js/core.js?v=1110-release2"></script><script src="js/product-pricing.js"></script><script src="js/product-seed.js"></script><script src="js/data.js?v=1110-local"></script><script src="js/operations-client.js"></script><script>
+(async () => {
+await XA.loadCatalog();
+const query = new URLSearchParams(location.search);
+const store = XA.data.stores.find(s => s.id === query.get('store') && !s.linked);
+const claiming = query.get('action') === 'claim';
+const form = document.querySelector('form');
+document.querySelector('#title').textContent = claiming ? '认领门店' : '新店入驻';
+document.querySelector('#target').textContent = claiming ? (store?.name || '未找到可认领的门店') : '';
+if (claiming) {
+  for (const name of ['store','address','city','district']) {
+    form.elements[name].disabled = true;
+    form.elements[name].closest('label').hidden = true;
+  }
+  form.hidden = !store;
+  if (!store) form.style.display = 'none';
+}
+document.querySelector('#back').onclick = () => {
+  if (document.referrer && new URL(document.referrer).origin === location.origin) history.back();
+  else location.assign('./#/store');
+};
+const ticketKey = 'xa.partner.' + (claiming ? query.get('store') : 'new');
+let receipt = localStorage.getItem(ticketKey);
+const result = document.querySelector('#result');
+if (!claiming || store) form.style.display = '';
+if (receipt) {
+  try {
+    const review = XA.opsRequest('receipt','POST',{receipt});
+    result.textContent = ({pending:'待审核',approved:'已通过',rejected:'已退回'})[review.status] + (review.note ? ' · '+review.note : '');
+    if (review.status !== 'rejected') form.style.display = 'none';
+  } catch (error) { if (error.status !== 404) throw error; }
+}
+form.onsubmit = e => {
+  e.preventDefault();
+  const fields = Object.fromEntries(Array.from(new FormData(form), ([k,v]) => [k,v.trim()]));
+  try {
+    const application = claiming ? {...fields,storeId:store.id,store:store.name,address:store.address,city:store.city,district:store.district} : fields;
+    const saved = XA.opsRequest('apply','POST',{...application,type:claiming?'claim':'new',receipt});
+    localStorage.setItem(ticketKey,saved.receipt);
+    form.style.display = 'none';
+    result.textContent = '已提交 · 待审核';
+  } catch (error) {
+    result.textContent = error.status === 409 ? '已有申请或资料已更新，请刷新核对' : '提交失败，请检查资料后重试';
+  }
+};
+})().catch(()=>{document.querySelector('form').hidden=true;document.querySelector('#result').textContent='门店资料暂时无法加载，请刷新重试';});
+</script></body></html>
