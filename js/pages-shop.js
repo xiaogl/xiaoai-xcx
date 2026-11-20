@@ -1,6 +1,7 @@
 /* pages-shop.js —— 电商：商详（品牌模块）/ 品牌专区 / 购物车 / 结算 / 支付结果 / 订单 / 仅退款 */
 (function () {
   const D = XA.data, icon = XA.icon, ui = XA.ui, esc = XA.esc;
+  const IN_APP_CHECKOUT_ENABLED = false;
   const SRC = { feed: '首页聚合流', video: '视频挂车', post: '社区好物', search: '搜索', order: '订单复购', promoter: '推广链路', group: '拼团' };
   const ADDRESS = { name: '林阿姨', phone: '138****6608', address: '浙江省杭州市西湖区 文三路 ×× 小区 3 幢 502 室（演示地址）' };
   const deliveryAddress = () => XA.state.shippingAddress || ADDRESS;
@@ -23,26 +24,57 @@
     };
   };
 
+  const catalogCategories = () => ['全部', ...(D.shopCategories ? D.shopCategories.filter(c => c.enabled).sort((a, b) => a.sort - b.sort).map(c => c.name) : [...new Set(D.products.map(p => p.category).filter(Boolean))])];
+  const catalogChildren = category => D.shopCategories?.find(c => c.enabled && c.name === category)?.sub || [];
+  const catalogList = f => {
+    const list = D.products.filter(p => (f.category === '全部' || p.category === f.category) && (!f.sub || p.subcategory === f.sub));
+    if (f.price !== 'default') list.sort((a, b) => (XA.memberPrice(a, XA.defaultOpts(a)) - XA.memberPrice(b, XA.defaultOpts(b))) * (f.price === 'low' ? 1 : -1));
+    return list;
+  };
+  const catalogProducts = f => {
+    const list = catalogList(f);
+    return `${ui.sec(esc(f.sub || (f.category === '全部' ? '全部商品' : f.category)))}${list.length ? `<div class="feed">${list.map(p => ui.productCard(p, 'feed')).join('')}</div>` : ui.empty('该条件下暂无商品')}`;
+  };
   XA.page('catalog', {
     title: '商品分类',
     render(q) {
-      const categories = ['全部', ...(D.shopCategories ? D.shopCategories.filter(c=>c.enabled).sort((a,b)=>a.sort-b.sort).map(c=>c.name) : [...new Set(D.products.map(p => p.category).filter(Boolean))])];
-      const current = categories.includes(q.category) ? q.category : '全部';
-      const children = D.shopCategories?.find(c => c.enabled && c.name === current)?.sub || [];
-      const child = children.includes(q.sub) ? q.sub : '';
-      const list = D.products.filter(p => (current === '全部' || p.category === current) && (!child || p.subcategory === child));
-      return `<div class="sec chips wrap">${categories.map(c => `<button class="chip ${current===c?'on':''}" data-go="catalog?category=${encodeURIComponent(c)}">${esc(c)}</button>`).join('')}</div>
-        ${children.length ? `<div class="sec chips wrap">${['',...children].map(c => `<button class="chip ${child===c?'on':''}" data-go="catalog?category=${encodeURIComponent(current)}&amp;sub=${encodeURIComponent(c)}">${esc(c || '全部子类')}</button>`).join('')}</div>` : ''}
-        ${ui.sec(esc(child || (current === '全部' ? '全部商品' : current)))}<div class="feed">${list.map(p=>ui.productCard(p,'feed')).join('')}</div>`;
+      const categories = catalogCategories();
+      const f = XA.tmp.catalog || (XA.tmp.catalog = { category: categories.includes(q.category) ? q.category : '全部', sub: q.sub || '', price: 'default' });
+      if (!categories.includes(f.category)) f.category = '全部';
+      if (!catalogChildren(f.category).includes(f.sub)) f.sub = '';
+      return `<div class="sec catalog-filters">
+        <label><span>品类</span><select id="catalog-category">${categories.map(c => `<option value="${esc(c)}" ${f.category === c ? 'selected' : ''}>${esc(c === '全部' ? '全部品类' : c)}</option>`).join('')}</select></label>
+        <label id="catalog-sub-label" ${catalogChildren(f.category).length ? '' : 'hidden'}><span>子类</span><select id="catalog-sub"></select></label>
+        <label><span>价格</span><select id="catalog-price"><option value="default" ${f.price === 'default' ? 'selected' : ''}>综合排序</option><option value="low" ${f.price === 'low' ? 'selected' : ''}>价格从低到高</option><option value="high" ${f.price === 'high' ? 'selected' : ''}>价格从高到低</option></select></label>
+      </div><div id="catalog-products">${catalogProducts(f)}</div>`;
+    },
+    mounted() {
+      const f = XA.tmp.catalog, category = XA.$('#catalog-category'), sub = XA.$('#catalog-sub'), price = XA.$('#catalog-price');
+      const paintSub = () => {
+        const children = catalogChildren(f.category);
+        XA.$('#catalog-sub-label').hidden = !children.length;
+        sub.innerHTML = `<option value="">全部子类</option>${children.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}`;
+        sub.value = f.sub;
+      };
+      const paintProducts = () => { XA.$('#catalog-products').innerHTML = catalogProducts(f); };
+      category.onchange = () => { f.category = category.value; f.sub = ''; paintSub(); paintProducts(); };
+      sub.onchange = () => { f.sub = sub.value; paintProducts(); };
+      price.onchange = () => { f.price = price.value; paintProducts(); };
+      paintSub();
     },
   });
   /* ---------- 购物车数据 ---------- */
   XA.cartCount = () => XA.state.cart.reduce((a, c) => a + c.qty, 0);
+  XA.act.buyExternal = (pid) => {
+    const product = D.product(pid), brand = product && D.brands[product.brand];
+    if (!brand || !['yqdd', 'mdm'].includes(product.brand)) return XA.modal({ title: '购买入口待配置', content: '该商品的第三方购买入口暂未配置。', confirmText: '知道了' });
+    return XA.modal({ title: `前往${brand.name}小程序`, content: '跳转入口为演示，暂未接入实际跳转。', confirmText: '知道了' });
+  };
   const cartReminderPages = new Set(['home', 'search', 'article', 'lesson', 'course', 'video', 'creator', 'community', 'topic', 'note', 'brand', 'catalog', 'favs', 'me', 'test-result', 'symptom']);
   XA.updateCartReminder = page => {
     const count = XA.cartCount();
     const reminder = XA.$('#cart-reminder');
-    reminder.hidden = !count || !cartReminderPages.has(page);
+    reminder.hidden = true;
     if (!reminder.hidden) {
       reminder.innerHTML = `${icon('cart', 'ic-s')}<b>购物车</b><span>${count} 件商品</span><strong>去购物车 ${icon('right', 'ic-s')}</strong>`;
     }
@@ -62,10 +94,7 @@
     XA.save(); return true;
   };
   XA.act.quickAdd = (pid, source) => {
-    const p = D.product(pid);
-    if (!p || !addCart(pid, XA.defaultOpts(p), 1, source)) return;
-    XA.updateCartReminder(XA.current()?.name);
-    XA.toast('已加入购物车', true);
+    XA.act.buyExternal(pid);
   };
 
   /* ---------- 规格选择抽屉（主流电商交互：选规格 → 数量 → 确认） ---------- */
@@ -90,11 +119,7 @@
       </div>`;
   };
   XA.act.sku = (pid, mode) => {
-    const p = D.product(pid);
-    XA.tmp.sel = XA.tmp.sel || {};
-    sku = { pid, mode: mode || 'both', opts: (XA.tmp.sel[pid] || XA.defaultOpts(p)).slice(), qty: 1 };
-    XA.sheet({ title: '选择规格', html: `<div id="skuBody"></div>` });
-    paintSku();
+    XA.act.buyExternal(pid);
   };
   XA.act.skuPick = (si, oi) => { sku.opts[si] = oi; XA.tmp.sel[sku.pid] = sku.opts.slice(); paintSku(); };
   XA.act.skuQty = (d) => { sku.qty = Math.max(1, Math.min(99, sku.qty + d)); paintSku(); };
@@ -128,8 +153,8 @@
       <div class="carousel pcar" id="car">${imgs.map((a,i) => `<div class="slide">${assets.length ? XA.mediaPreview(a) : ui.cover(p)}</div>`).join('')}</div>
       <div class="car-dots" id="carDots">${imgs.map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</div>
       <div class="sec card">
-        <div class="row gap8">${ui.price(mp, 'xl')}${priceLabels(p,opts)}<span class="grow"></span><span class="faint small">已售 ${XA.wan(p.sales)}</span></div>
-        <h1 class="ptitle">${p.curated ? `<span class="tag tag-solid">晓艾精选</span>` : ''}${esc(p.title)}</h1>
+        <div class="row gap8">${ui.price(mp, 'xl')}${priceLabels(p,opts)}</div>
+        <h1 class="ptitle">${esc(p.title)}</h1>
         ${p.points?.length ? `<ul class="ppoints">${p.points.map((t) => `<li>${icon('check', 'ic-s')}<span>${esc(t)}</span></li>`).join('')}</ul>` : ''}
         <div class="trust-bar" data-go="brand?id=${b.id}">
           <span>${icon('leaf', 'ic-xs')}${b.origin.split(/[·，]/)[0].trim()}</span><i></i>
@@ -138,7 +163,6 @@
           <em>看品牌${icon('right', 'ic-xs')}</em>
         </div>
       </div>
-      ${XA.groupOf && XA.groupOf(p.id) ? (() => { const g = XA.groupOf(p.id); return `<div class="sec card group" data-go="groups"><span class="group-ic warm">${icon('users')}</span><div class="grow"><div class="bold">${g.size} 人拼团价 ¥${g.price}</div><div class="muted small">单买 ¥${p.price} · 24 小时未成团自动退款</div></div><button class="btn btn-sm btn-warm" onclick="event.stopPropagation();XA.act.groupStart('${p.id}')">去拼团</button></div>`; })() : ''}
       <div class="sec card brand-entry" data-go="brand?id=${b.id}">
         <div class="brand-entry-hd">
           <span class="brand-mark">${b.mark || b.name.slice(0, 1)}</span>
@@ -151,16 +175,13 @@
         <div class="brand-entry-stats">
           <div><b>${b.since} 年</b><span>创立</span></div>
           <div><b>${b.rating}</b><span>综合评分</span></div>
-          <div><b>${b.sold}</b><span>累计售出</span></div>
           <div><b>${XA.wan(b.fans)}</b><span>关注</span></div>
         </div>
         <div class="brand-entry-promise">${(b.promise || []).map((t) => `<span>${icon('check', 'ic-xs')}${t}</span>`).join('')}</div>
-        <div class="brand-entry-ft"><span class="muted small">晓艾精选 · ${b.city}</span><b>走进品牌${icon('right', 'ic-xs')}</b></div>
+        <div class="brand-entry-ft"><span class="muted small">${b.city}</span><b>走进品牌${icon('right', 'ic-xs')}</b></div>
       </div>
       <div class="cells sec">
-        <div class="cell" onclick="XA.act.sku('${p.id}')"><span class="cell-label">规格</span><div class="cell-bd">${p.soldOut ? '暂时无货' : '已选：' + XA.specLabel(p, opts)}</div>${icon('right', 'faint')}</div>
-        <div class="cell"><span class="cell-label">配送</span><div class="cell-bd">现货 · 48 小时内发货 · ${XA.freeShip() ? (XA.isPlus() ? 'Plus 全年包邮' : '黄金起包邮') : '满 59 元包邮'}</div></div>
-        <div class="cell"><span class="cell-label">服务</span><div class="cell-bd">未发货时您可申请退款 · <button class="link" data-go="brand?id=${b.id}">证照与检测</button></div></div>
+        <div class="cell"><span class="cell-label">规格与配送</span><div class="cell-bd">请以品牌小程序展示为准</div></div>
       </div>
       ${ui.sec('商品详情')}
         ${[p.category,p.subcategory,...(p.tags || [])].filter(Boolean).map(t => `<button class="tag tag-outline" data-go="search?q=${encodeURIComponent(t)}">${esc(t)}</button>`).join(" ")}
@@ -174,11 +195,9 @@
       if (car) car.addEventListener('scroll', () => { const i = Math.round(car.scrollLeft / car.clientWidth); dots.forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
     },
     footer(q) {
-      const p = D.product(q.id) || D.products[0], n = XA.cartCount();
+      const p = D.product(q.id) || D.products[0], b = D.brands[p.brand];
       return `<button class="fbtn" onclick="XA.wecom('联系客服')">${icon('headset')}<span>客服</span></button>
-        <button class="fbtn" data-go="cart">${icon('cart')}<span>购物车</span>${n ? `<em class="badge">${n}</em>` : ''}</button>
-        ${p.soldOut ? `<button class="btn btn-gray grow" onclick="XA.toast('到货后会通知您（演示）',true)">已售罄 · 到货提醒我</button>` :
-          `<button class="btn btn-tonal grow" onclick="XA.act.sku('${p.id}','cart')">加入购物车</button><button class="btn btn-primary grow" onclick="XA.act.sku('${p.id}','buy')">立即购买</button>`}`;
+        <button class="btn btn-primary grow" onclick="XA.act.buyExternal('${p.id}')">${['yqdd', 'mdm'].includes(p.brand) ? `前往${esc(b.name)}小程序` : '购买入口待配置'}</button>`;
     },
   });
 
@@ -210,7 +229,7 @@
           <div class="grow">
             <h1>${b.name}</h1>
             <div class="muted small">${b.slogan}</div>
-            <div class="row gap6 mt8 flex-wrap"><span class="tag tag-orange">晓艾精选</span><span class="tag tag-gray">${b.city}</span></div>
+            <div class="row gap6 mt8 flex-wrap"><span class="tag tag-gray">${b.city}</span></div>
           </div>
         </div>
       </div>
@@ -218,7 +237,6 @@
       <div class="sec card brand-metrics">
         <div><b>${b.since}</b><span>创立年份</span></div>
         <div><b>${b.rating}</b><span>综合评分</span></div>
-        <div><b>${b.sold}</b><span>累计售出</span></div>
         <div><b>${XA.wan(b.fans)}</b><span>关注人数</span></div>
       </div>
       ${ui.sec('品牌故事')}
@@ -262,10 +280,7 @@
   XA.act.cartQty = (i, d) => { const c = XA.state.cart[i]; c.qty = Math.max(1, Math.min(99, c.qty + d)); XA.save(); XA.refresh(); };
   XA.act.cartDel = (i) => XA.modal({ title: '删除这件商品？', confirmText: '删除', danger: true, onConfirm: () => { XA.state.cart.splice(i, 1); XA.save(); XA.refresh(); } });
   XA.act.cartGo = () => {
-    const items = XA.state.cart.filter((c) => c.checked);
-    if (!items.every(canFulfill)) return XA.toast('所选商品已下架或库存不足');
-    if (!items.length) return XA.toast('请先勾选要结算的商品');
-    XA.needLogin(() => { XA.tmp.checkout = { items: items.map((c) => ({ pid: c.pid, opts: c.opts, qty: c.qty, source: c.source, key: c.key })), fromCart: true }; XA.go('checkout'); }, '登录后继续结算，已勾选的商品会保留。');
+    XA.toast('请前往商品所属小程序购买');
   };
   XA.page('cart', {
     title: '购物车',
@@ -300,7 +315,7 @@
       const sum = sel.reduce((a, c) => a + XA.memberPrice(D.product(c.pid), c.opts) * c.qty, 0);
       return `<button class="row gap8" onclick="XA.act.cartAll()"><span class="check ${all ? 'on' : ''}">${icon('check')}</span>全选</button>
         <div class="grow right">合计 ${ui.price(sum, 'lg')}</div>
-        <button class="btn btn-primary" onclick="XA.act.cartGo()">${XA.state.loggedIn ? '去结算' : '登录并结算'}${sel.length ? `（${sel.reduce((a, c) => a + c.qty, 0)}）` : ''}</button>`;
+        <button class="btn btn-primary" data-go="catalog">查看商品</button>`;
     },
   });
 
@@ -328,6 +343,7 @@
     });
   };
   XA.act.payOrder = () => {
+    if (!IN_APP_CHECKOUT_ENABLED) return XA.toast('本程序暂不支持付款');
     if (!XA.state.loggedIn) return XA.login(XA.act.payOrder, '登录后可提交这笔订单。');
     const ck = XA.tmp.checkout;
     if (!ck?.items.every(canFulfill)) return XA.toast('商品已下架或库存不足');
@@ -365,6 +381,7 @@
   XA.page('checkout', {
     title: '确认订单',
     render() {
+      if (!IN_APP_CHECKOUT_ENABLED) return ui.empty('本程序暂不支持付款，请前往商品所属小程序购买', '查看商品', 'catalog');
       const ck = XA.tmp.checkout;
       if (!ck) return ui.empty('没有待结算的商品', '去首页看看好物', 'home');
       const r = calc();
@@ -386,6 +403,7 @@
       <div class="center faint small mt12">未发货时您可申请退款，款项原路退回</div>`;
     },
     footer() {
+      if (!IN_APP_CHECKOUT_ENABLED) return '';
       if (!XA.tmp.checkout) return '';
       const r = calc();
       return `<div class="grow">合计 ${ui.price(r.amount, 'lg')}</div><button class="btn btn-wx" style="min-width:9rem" onclick="XA.act.payOrder()">${XA.isPlus() ? '微信支付' : '选择购买方式'}</button>`;
@@ -463,12 +481,12 @@
   };
   const onlineCard = (o) => {
     if (o.kind === 'course' || o.kind === 'membership' || o.kind === 'plus') {
-      const V = { course: [`course?id=${o.ref}`, '课程订阅', '去学习'], membership: ['membership', '晓艾家会籍', '查看会籍'], plus: ['plus', '晓艾会 Plus', '查看 Plus'] }[o.kind];
-      return `<div class="sec card order" data-go="${V[0]}">
+      const V = { course: ['', '课程订阅', ''], membership: ['membership', '晓艾家会籍', '查看会籍'], plus: ['plus', '晓艾会 Plus', '查看 Plus'] }[o.kind];
+      return `<div class="sec card order" ${V[0] ? `data-go="${V[0]}"` : ''}>
         <div class="row between"><span class="row gap6">${otag('online')}<span class="faint small">${V[1]}</span></span><span class="st st-done">已生效</span></div>
         ${simpleRow(o.art, o.title, '虚拟商品 · 购买后立即生效，无需发货')}
         <div class="right muted small">${o.status==='unpaid'?'待付':'实付'} <b class="c-text">¥${XA.money(o.amount)}</b></div>
-        <div class="order-btns"><span class="btn btn-sm btn-outline">${V[2]}</span></div>
+        ${V[2] ? `<div class="order-btns"><span class="btn btn-sm btn-outline">${V[2]}</span></div>` : ''}
       </div>`;
     }
     return `<div class="sec card order">

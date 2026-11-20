@@ -72,11 +72,10 @@
 
   /* ================= 视频：竖屏沉浸式，上滑切换，购物袋挂车 ================= */
   const bindLabel = (v) => {
-    const b = v.binds.find(b => b.type === 'product' ? D.product(b.id) : b.type === 'course' ? D.course(b.id) : true);
+    const b = v.binds.find(b => b.type === 'product' ? D.product(b.id) : b.type === 'store');
     if (!b) return '暂无关联资源';
-    if (b.type === 'store') return `${icon('store', 'ic-s')}<span>晓艾家 · 预约到店体验</span>`;
-    if (b.type === 'course') return `${icon('book', 'ic-s')}<span>相关课程</span>`;
-    const p = D.product(b.id), n = v.binds.length;
+    if (b.type === 'store') return `${icon('store', 'ic-s')}<span>查看附近门店</span>`;
+    const p = D.product(b.id), n = v.binds.filter(b => b.type !== 'course').length;
     return `${icon('bag', 'ic-s')}<span>视频同款 · ${p.short}${n > 1 ? ` 等 ${n} 件` : ''}</span><b>¥${XA.money(XA.memberPrice(p, XA.defaultOpts(p)))}</b>`;
   };
   const vitem = (v, i) => {
@@ -91,7 +90,7 @@
         <button class="vact" onclick="XA.act.shareNeed('${esc(v.title)}')">${icon('share')}<span>转发</span></button>
       </div>
       <div class="vinfo">
-        <button class="vcart" onclick="XA.act.vbag('${v.id}')">${bindLabel(v)}${icon('right', 'ic-s')}</button>
+        ${v.binds.some(b => b.type === 'product' ? D.product(b.id) : b.type === 'store') ? `<button class="vcart" onclick="XA.act.vbag('${v.id}')">${bindLabel(v)}${icon('right', 'ic-s')}</button>` : ''}
         <button class="vauthor" ${aid ? `data-go="creator?id=${aid}"` : 'type="button"'}>@${esc(videoAuthor(v))} <span class="vbadge">${esc(v.badge)}</span></button>
         <div class="vtitle">${esc(v.title)}</div>
         <div class="vnote">养生科普，仅供参考，不能替代医疗诊断</div>
@@ -139,8 +138,9 @@
   /* 挂车抽屉：半屏展示挂载清单，可直接加购或进商详（source=video 归因） */
   XA.act.vbag = (vid) => {
     const v = D.videoOf(vid) || (XA.state.myVideos || []).find((x) => x.id === vid);
-    if (!v || !v.binds || !v.binds.length) return XA.toast('这条视频还没有关联商品');
-    const rows = v.binds.map((b) => {
+    const binds = v?.binds?.filter(b => b.type !== 'course') || [];
+    if (!binds.length) return XA.toast('这条视频还没有关联商品');
+    const rows = binds.map((b) => {
       if (b.type === 'product') {
         const p = D.product(b.id); if (!p) return ''; const br = D.brands[p.brand], mp = XA.memberPrice(p, XA.defaultOpts(p));
         return `<div class="bagrow ${p.soldOut ? 'soldout' : ''}">
@@ -148,21 +148,17 @@
             ${ui.cover(p, 'bag-img')}
             <div class="grow"><div class="fcard-title">${esc(p.short)}</div><div class="fcard-tags">${ui.brandTag(br)}<span class="faint small">${br.name}</span></div><div class="row gap6">${ui.price(mp)}${mp < p.price ? `<span class="tag tag-gold">${XA.priceTag()}</span>` : ''}</div></div>
           </div>
-          ${p.soldOut ? `<span class="btn btn-gray btn-sm" disabled>已售罄</span>` : `<button class="btn btn-primary btn-sm" onclick="XA.act.quickAdd('${p.id}','video')">加入购物车</button>`}
+          ${p.soldOut ? `<span class="btn btn-gray btn-sm" disabled>已售罄</span>` : `<button class="btn btn-primary btn-sm" onclick="XA.act.buyExternal('${p.id}')">去购买</button>`}
         </div>`;
       }
-      if (b.type === 'course') {
-        const c = D.course(b.id); if (!c) return "";
-        return `<div class="bagrow"><div class="bagrow-main" onclick="XA.closeSheet();XA.go('course?id=${c.id}')">${ui.cover(c, 'bag-img')}<div class="grow"><div class="fcard-title">${esc(c.title)}</div><div class="fcard-tags"><span class="tag tag-outline">课程</span><span class="faint small">${c.teacher}</span></div>${ui.price(c.price)}</div></div><button class="btn btn-tonal btn-sm" onclick="XA.closeSheet();XA.go('course?id=${c.id}')">去试看</button></div>`;
-      }
       const sv = D.service(b.id);
-      return `<div class="bagrow"><div class="bagrow-main" onclick="XA.closeSheet();XA.go('booking?service=${sv.id}')">${ui.art(sv.art, 'bag-img')}<div class="grow"><div class="fcard-title">${sv.name} · ${sv.dur} 分钟</div><div class="fcard-tags"><span class="tag tag-green">晓艾家</span><span class="faint small">${D.located.status === 'granted' ? '离您最近' : '可预约门店'}：${D.nearest('xaj').name.replace('晓艾家 · ', '')} ${D.kmText(D.nearest('xaj'))}</span></div><div class="row gap6">${ui.price(sv.mprice)}<span class="tag tag-gold">会员价</span></div></div></div><button class="btn btn-primary btn-sm" onclick="XA.closeSheet();XA.go('booking?service=${sv.id}')">去预约</button></div>`;
+      return `<div class="bagrow"><div class="bagrow-main" onclick="XA.closeSheet();XA.go('store')">${ui.art(sv.art, 'bag-img')}<div class="grow"><div class="fcard-title">${sv.name} · ${sv.dur} 分钟</div><div class="fcard-tags"><span class="faint small">门店暂未入驻</span></div></div></div><button class="btn btn-tonal btn-sm" onclick="XA.closeSheet();XA.go('store')">查看门店</button></div>`;
     }).join('');
-    const hasGoods = v.binds.some((b) => b.type === 'product');
+    const hasGoods = binds.some((b) => b.type === 'product');
     XA.sheet({
-      title: hasGoods ? `视频同款（${v.binds.length}）` : '视频相关',
+      title: hasGoods ? `视频同款（${binds.length}）` : '视频相关',
       html: rows,
-      footer: hasGoods ? `<button class="btn btn-tonal btn-block" onclick="XA.closeSheet();XA.go('cart')">${icon('cart', 'ic-s')} 去购物车结算<span id="bag-cart-count">${XA.cartCount() ? `（${XA.cartCount()} 件）` : ''}</span></button>` : '',
+      footer: '',
     });
   };
 
@@ -367,7 +363,6 @@
             </div>
             <div class="dy-actions">
               <button type="button" class="dy-edit-inline" data-go="vprofile">编辑资料</button>
-              <button type="button" class="dy-post" data-go="vpost">发视频</button>
             </div>
           </div>
           <div class="dy-bio">${esc(p.bio || '写一句介绍')}</div>
@@ -659,7 +654,6 @@
             </div>
             <div class="dy-actions">
               <button type="button" class="dy-edit-inline" data-go="cprofile">编辑资料</button>
-              <button type="button" class="dy-post" onclick="XA.needLogin(function(){XA.go('compose')})">发笔记</button>
             </div>
           </div>
           ${bioBlock(p.bio)}
@@ -671,7 +665,6 @@
         </div>`;
       }
       return `
-      <div class="fab-anchor"><button type="button" class="fab-pen" aria-label="发笔记" onclick="XA.needLogin(function(){XA.go('compose')})">${icon('pencil')}</button></div>
       <div class="csub">${tabBtn('follow', '关注')}${tabBtn('pick', '推荐')}${tabBtn('mine', '我的')}<button type="button" class="tab-search" data-go="csearch" aria-label="搜索">${icon('search')}</button></div>
       ${me}
       ${tab === 'mine' ? '' : `<div class="topic-row">${pills}</div>`}

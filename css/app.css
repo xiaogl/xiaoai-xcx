@@ -772,7 +772,7 @@ ul { list-style: none; }
 .brand-mark { width: 3.2rem; height: 3.2rem; border-radius: 14px; background: linear-gradient(145deg, #2c3531, #1b211e); color: #f1d99c; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; flex: none; }
 .brand-mark.xl { width: 4.2rem; height: 4.2rem; border-radius: 18px; font-size: 1.6rem; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(20,28,24,.12); }
 .brand-entry-name { font-size: 1.0625rem; }
-.brand-entry-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.brand-entry-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .brand-entry-stats div { text-align: center; }
 .brand-entry-stats b { display: block; font-size: .95rem; color: var(--text); }
 .brand-entry-stats span { display: block; font-size: .95rem; color: var(--faint); margin-top: 2px; }
@@ -784,7 +784,7 @@ ul { list-style: none; }
 .brand-hero-bg { height: 7.5rem; overflow: hidden; }
 .brand-hero-in { display: flex; align-items: flex-end; gap: 12px; padding: 0 16px; margin-top: -2.1rem; position: relative; }
 .brand-hero-in h1 { font-size: 1.4rem; line-height: 1.2; }
-.brand-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; }
+.brand-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center; }
 .brand-metrics b { display: block; font-size: 1.05rem; }
 .brand-metrics span { display: block; font-size: .95rem; color: var(--faint); margin-top: 2px; }
 .brand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -838,8 +838,9 @@ ul { list-style: none; }
 .store-top { position: sticky; top: 0; z-index: 4; background: #fff; padding: 8px 16px 10px; }
 .store-top .home-loc-row { margin: 0 0 8px; }
 .store-top .home-loc { color: var(--primary-d); }
-.city-btn { display: flex; align-items: center; gap: 2px; height: 2.9rem; font-size: 1.0625rem; font-weight: 700; flex: none; }
-.search-btn { flex: none; height: 2.9rem; min-height: 0; padding: 0 14px; border-radius: 999px; font-weight: 650; white-space: nowrap; }
+.city-btn { display: flex; align-items: center; gap: 2px; height: 2.25rem; font-size: 1.0625rem; font-weight: 700; flex: none; }
+.store-top .searchbar { height: 2.25rem; }
+.search-btn { flex: none; height: 2.25rem; min-height: 0; padding: 0 14px; border-radius: 999px; font-weight: 650; white-space: nowrap; }
 .filterbar { display: flex; margin-top: 8px; }
 .filterbar button { flex: 1; height: 2.6rem; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: .95rem; color: var(--text); min-width: 0; }
 .filterbar button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -888,7 +889,7 @@ ul { list-style: none; }
 .scard-img.un .ic { width: 2.2rem; height: 2.2rem; }
 .scard-un .scard-name { font-weight: 600; }
 .brand-line { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg); }
-.un-hd { height: 9rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #e6e9e6; color: #a3aca6; font-size: .95rem; }
+.un-hd { height: 4.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #e6e9e6; color: #a3aca6; font-size: .95rem; }
 .un-hd .ic { width: 2.6rem; height: 2.6rem; }
 .tipbox.warn { background: var(--orange-bg); color: var(--orange); }
 /* 团购券 */
@@ -909,6 +910,15 @@ ul { list-style: none; }
 .scard-tags { display: flex; flex-wrap: nowrap; gap: 5px; margin-top: 5px; overflow: hidden; }
 .scard-tags .tag { flex: none; }
 .feed .scard { margin: 0; }
+.scard-un .store-brand { min-width: 0; flex: 0 1 auto !important; overflow: hidden; text-overflow: ellipsis; }
+.scard-un .scard-foot { justify-content: flex-end; }
+.scard-un .scard-foot > span:first-child { display: none; }
+.scard-un .scard-foot .btn { padding: 0 .7rem; font-size: .9rem; }
+.catalog-filters { display: flex; gap: 8px; }
+.catalog-filters label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: .9rem; color: var(--muted); }
+.catalog-filters label[hidden] { display: none; }
+.catalog-filters select { width: 100%; min-width: 0; min-height: 44px; padding: 0 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); font-size: .95rem; }
+@media (max-width: 360px) { .scard-un .scard-img { width: 4.7rem; height: 4.7rem; } .scard-un .scard-foot .btn { padding: 0 .45rem; } }
 
 /* ---------- 门店详情 / 预约 ---------- */
 .svc-list { display: flex; flex-direction: column; gap: 10px; }
@@ -1307,6 +1317,17 @@ html.care .me-bens { display: none; }
   .phone::before, .app::after { display: none; }
   .tabbar { padding-bottom: var(--safe); }
 }
+/* WebView 外层已有微信导航、胶囊和系统栏；只保留 H5 页面与底部导航。 */
+.wechat-preview { --sb: 0px; }
+.wechat-preview body { background: var(--bg); }
+.wechat-preview .stage { display: block; min-height: 0; padding: 0; }
+.wechat-preview .phone-box { width: 100%; height: 100vh; height: 100dvh; }
+.wechat-preview .phone { width: 100%; height: 100%; transform: none; padding: 0; border-radius: 0; box-shadow: none; }
+.wechat-preview .app { border-radius: 0; }
+.wechat-preview :is(.guide, .statusbar, .capsule),
+.wechat-preview .phone::before, .wechat-preview .app::after { display: none; }
+.wechat-preview .tabbar { padding-bottom: var(--safe); }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
 .nearest-entry { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:12px 14px; background:#edf4ef; color:#255d48; border-radius:14px; }

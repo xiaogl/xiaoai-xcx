@@ -286,7 +286,9 @@
   };
 
   /* 微信支付（模拟） */
+  const PAYMENT_ENABLED = false;
   XA.pay = (opt) => {
+    if (!PAYMENT_ENABLED) return XA.toast('本程序暂不支持付款');
     const el = XA.sheet({
       title: `<span class="row gap8"><span class="logo-dot">艾</span>晓艾</span>`,
       cls: 'pay-sheet',
@@ -311,6 +313,7 @@
     s.orders.unshift({ id: XA.uid('XA'), paymentId, kind:'plus', title:'晓艾会 Plus 会员（1 年）', art:['leaf','night'], amount:XA.data.plus.price, points:0, status:'done', at:new Date().toISOString() });
   };
   XA.purchase = ({title, quote, success, deferPlus = false}) => {
+    if (!PAYMENT_ENABLED) return XA.toast('本程序暂不支持付款');
     const pay = (bundle) => {
       const pricing = quote(bundle);
       const fee = bundle ? XA.data.plus.price : 0;
@@ -466,19 +469,20 @@
     return { name, q, key: '#/' + h };
   };
   XA.go = (path, replace) => {
+    if (['course', 'lesson', 'my-courses'].includes(pageOf(path))) return XA.toast('课程暂不可用');
     if (!XA.state.loggedIn && XA.pageNeedsLogin(path)) return XA.login(() => XA.go(path, replace), LOGIN_REASON);
     const h = path.charAt(0) === '#' ? path : '#/' + path;
     if (h === location.hash) return XA.refresh();
     if (replace) { replacing = true; location.replace(h); } else location.hash = h;
   };
-  XA.back = () => { if (stack.length > 1) history.back(); else XA.go('home'); };
+  XA.back = () => { if (cur && cur.name === 'catalog') XA.go('home'); else if (stack.length > 1) history.back(); else XA.go('home'); };
   XA.current = () => cur;
 
   const render = (dir) => {
     const p = parse(location.hash);
     let def = routes[p.name] || routes.notfound;
     const course = p.name === 'lesson' ? XA.data.course(p.q.c) : null;
-    if ((p.name === 'product' && !XA.data.product(p.q.id)) ||
+    if (['course', 'lesson', 'my-courses'].includes(p.name) || (p.name === 'product' && !XA.data.product(p.q.id)) ||
         (p.name === 'course' && !XA.data.course(p.q.id)) ||
         (p.name === 'lesson' && (!course?.lessons[p.q.i] || (!course.lessons[p.q.i].trial && !XA.state.courses.includes(course.id))))) {
       def = {title:'内容暂不可用',render:()=>'<div class="sec card">该内容暂不可访问。</div>'};
@@ -536,7 +540,7 @@
       if (!goEl && !e.target.closest('[data-back], [data-model], [data-view], .home-dots, .home-loc, .home-loc-toggle, .chips.pad, .sheet-x, .scrim')) {
         const clickable = e.target.closest('#view button, #view [onclick], #footer button, #footer [onclick]');
         const code = clickable ? (clickable.getAttribute('onclick') || '') : '';
-        const looking = /XA\.act\.(homeTab|askLocation|locToggle|browseCity|sfSet|sfReset|sfCity|acuPart|nearestStores|search|ptSheet|claimWelcome|profileCare|reviewSpan|vTab|cTab|cTopic|draftTopic|vlike|vfav|follow|like|fav|shareNeed|openVideo|openFoundVideo|cSearch|cSearchTab|cClearHist|cGuess|cSort|cBioOpen|vSearch|vSearchTab|vClearHist|vGuess|openTopic)\(|XA\.login\(|XA\.needLogin\(/.test(code);
+        const looking = /XA\.act\.(homeTab|askLocation|locToggle|browseCity|sfSet|sfReset|sfCity|acuPart|nearestStores|search|ptSheet|claimWelcome|profileCare|reviewSpan|vTab|cTab|cTopic|draftTopic|vlike|vfav|follow|like|fav|shareNeed|openVideo|openFoundVideo|cSearch|cSearchTab|cClearHist|cGuess|cSort|cBioOpen|vSearch|vSearchTab|vClearHist|vGuess|openTopic|goMeituan|navTo|call|buyExternal)\(|XA\.login\(|XA\.needLogin\(/.test(code);
         const openTool = cur && ['journal', 'review', 'pointfav', 'ask', 'timer', 'timer-run'].includes(cur.name);
         if (clickable && !openTool && !looking && !(clickable.matches('input, textarea, select') && !XA.pageNeedsLogin(cur && cur.name))) {
           e.preventDefault();

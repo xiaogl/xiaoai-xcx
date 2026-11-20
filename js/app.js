@@ -10,19 +10,23 @@
       <div class="g-row"><div><b>长辈模式</b><span>精简核心功能 + 大字</span></div><button class="switch ${XA.state.careMode ? 'on' : ''}" onclick="XA.setCare(!XA.state.careMode)" role="switch" aria-checked="${!!XA.state.careMode}"><i></i></button></div>
       <div class="g-row"><div><b>登录状态</b><span>${XA.state.loggedIn ? '已登录：' + XA.state.user.name : '未登录（游客）'}</span></div><button class="g-btn" onclick="XA.state.loggedIn=!XA.state.loggedIn;XA.save();XA.refresh()">${XA.state.loggedIn ? '切到游客' : '切到已登录'}</button></div>
       <div class="g-row"><div><b>成长等级</b><span>${lv.name} · 成长值 ${XA.state.user.growth}</span></div><button class="g-btn" onclick="XA.state.user.growth+=2000;XA.save();XA.refresh()">成长值 +2000</button></div>
-      <div class="g-row"><div><b>Plus 会员</b><span>${XA.isPlus() ? '已开通，至 ' + XA.state.plus.expire : '未开通（365 元/年）'}</span></div><button class="g-btn" onclick="XA.state.plus=XA.isPlus()?null:{since:XA.d.key(new Date()),expire:XA.d.key(XA.d.add(365))};XA.save();XA.refresh()">${XA.isPlus() ? '切到未开通' : '切到已开通'}</button></div>
       <div class="g-row"><div><b>演示数据</b><span>订单、预约、积分等</span></div><button class="g-btn" onclick="XA.reset()">重置</button></div>
       <div class="g-foot">当前页面：<code>${p ? p.key : ''}</code></div>`;
   };
-  /* 手机框等比缩放：屏幕固定 390×844，窗口放不下时整体缩小，不改变长宽比 */
-  const real = window.matchMedia('(max-width: 520px) and (pointer: coarse)');
-  const fit = () => {
-    const k = real.matches ? 1 : Math.min(1, (window.innerHeight - 32) / 864, (window.innerWidth - 16) / 410);
-    document.documentElement.style.setProperty('--k', Math.max(0.3, k).toFixed(4));
-  };
-  fit();
-  window.addEventListener('resize', fit);
-  XA.onRoute = paint;
+  const wechatPreview = new URLSearchParams(location.search).get('embed') === 'wechat';
+  if (wechatPreview) {
+    document.documentElement.classList.add('wechat-preview');
+  } else {
+    /* 手机框等比缩放：屏幕固定 390×844，窗口放不下时整体缩小，不改变长宽比 */
+    const real = window.matchMedia('(max-width: 520px) and (pointer: coarse)');
+    const fit = () => {
+      const k = real.matches ? 1 : Math.min(1, (window.innerHeight - 32) / 864, (window.innerWidth - 16) / 410);
+      document.documentElement.style.setProperty('--k', Math.max(0.3, k).toFixed(4));
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    XA.onRoute = paint;
+  }
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && XA.current()) XA.loadCatalog().then(() => { XA.act.askLocation(); XA.refresh(); }).catch(() => XA.toast('目录更新失败，请刷新重试'));
   });

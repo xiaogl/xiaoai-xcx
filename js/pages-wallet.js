@@ -17,7 +17,7 @@
     const s = XA.state;
     if (!s.loggedIn) return [];
     const lv = XA.level(), plus = XA.isPlus();
-    const list = [{ id: 'xa', tone: 'xa', mark: '艾', brand: '晓艾会', kind: plus ? 'PLUS' : '成长会员', name: lv.name, valid: plus ? `Plus 至 ${s.plus.expire}` : '长期有效' }];
+    const list = [{ id: 'xa', tone: 'xa', mark: '艾', brand: '晓艾会', kind: '积分会员', name: lv.name, valid: '长期有效' }];
     if (s.membership) list.push({ id: 'mb', tone: 'mb', mark: '家', brand: '晓艾家', kind: '付费会籍', name: `晓艾家 · ${s.membership.name}`, valid: `至 ${s.membership.expire}` });
     D.storePerks.filter((x) => XA.hasPerk(x.id)).forEach((x) => {
       const via = D.perkVia(x);
@@ -51,8 +51,8 @@
       const need = XA.levelOf(x.lv).short;
       return XA.modal({
         title: '还不能领取',
-        content: x.plus ? `开通 Plus 后您即可领取；或升到${need}（还差 ${gap} 成长值）。` : `升到${need}后您即可领取，还差 ${gap} 成长值。`,
-        confirmText: x.plus ? '开通 Plus' : '去升级', cancelText: '知道了', onConfirm: () => XA.go(x.plus ? 'plus' : 'xahui'),
+        content: `升到${need}后您即可领取，还差 ${gap} 成长值。`,
+        confirmText: '查看积分会员', cancelText: '知道了', onConfirm: () => XA.go('xahui'),
       });
     }
     const ps = XA.state.perks;
@@ -95,7 +95,6 @@
     if (c.id === 'xa') {
       return `<div class="cells sec">
           <div class="cell" data-go="xahui"><span class="cell-label">成长</span><div class="cell-bd bold ell">${lv.name}</div><span class="faint small ell">成长值 ${s.user.growth}</span>${R()}</div>
-          <div class="cell" data-go="plus"><span class="cell-label">Plus</span><div class="cell-bd bold">${plus ? '已开通' : '未开通'}</div><span class="faint small ell">${plus ? '至 ' + s.plus.expire : '365 元/年'}</span>${R()}</div>
           <div class="cell" data-go="points"><span class="cell-label">积分</span><div class="cell-bd bold">${s.points}</div>${R()}</div>
         </div>
         <div class="sec tipbox">${icon('info')}<span>晓艾会主卡是您在所有认证门店的通用身份；门店会员卡都挂在这张卡下面，一个会员码全部识别。</span></div>
@@ -107,9 +106,9 @@
         <div class="cells sec">
           <div class="cell"><span class="cell-label">适用门店</span><div class="cell-bd">全国晓艾家门店通用</div></div>
           <div class="cell"><span class="cell-label">有效期</span><div class="cell-bd">至 ${s.membership.expire}</div></div>
-          <div class="cell" data-go="membership"><span class="cell-label">来源</span><div class="cell-bd">付费购买 · ${plan.name}</div><span class="faint small">续费</span>${R()}</div>
+          <div class="cell"><span class="cell-label">来源</span><div class="cell-bd">历史会籍 · ${plan.name}</div></div>
         </div>
-        <div class="sec row gap12"><button class="btn btn-primary grow" data-go="member-code">${icon('qr', 'ic-s')}出示会员码</button><button class="btn btn-tonal grow" data-go="booking?store=${D.nearest('xaj').id}">去预约</button></div>${back}`;
+        <div class="sec row gap12"><button class="btn btn-primary grow" data-go="member-code">${icon('qr', 'ic-s')}出示会员码</button><button class="btn btn-tonal grow" data-go="store-detail?id=${D.nearest('xaj').id}">查看门店</button></div>${back}`;
     }
     const x = c.perk, via = D.perkVia(x), st = storeFor(x);
     return `<div class="sec card"><div class="bold">卡片权益</div><ul class="ppoints">${x.items.map((t) => `<li>${icon('check', 'ic-s')}<span>${t}</span></li>`).join('')}</ul></div>
@@ -118,7 +117,7 @@
         <div class="cell"><span class="cell-label">有效期</span><div class="cell-bd">${c.valid}</div></div>
         <div class="cell"><span class="cell-label">领取方式</span><div class="cell-bd">${via === 'plus' ? '凭 Plus 领取' : `凭${lv.short}领取`}</div></div>
       </div>
-      <div class="sec row gap12"><button class="btn btn-primary grow" data-go="member-code">${icon('qr', 'ic-s')}到店出示会员码</button>${st ? `<button class="btn btn-tonal grow" data-go="booking?store=${st.id}">去预约</button>` : ''}</div>
+      <div class="sec row gap12"><button class="btn btn-primary grow" data-go="member-code">${icon('qr', 'ic-s')}到店出示会员码</button>${st ? `<button class="btn btn-tonal grow" data-go="store-detail?id=${st.id}">查看门店</button>` : ''}</div>
       <div class="sec faint small center">这张卡由${brandOf(x)}提供，无需另外办卡；到店报手机号或出示会员码即可识别</div>${back}`;
   };
   const paintDetail = () => {
@@ -159,9 +158,8 @@
         <div id="wdetail"></div>
         <div class="wrest">
           ${rest.length ? `${ui.sec('可领取的门店会员卡')}
-          <div class="sec row gap6" style="margin-top:-4px;flex-wrap:nowrap"><span class="faint small ell">身份</span><span class="tag tag-gold">${lv.short}</span>${plus ? `<span class="plus-badge">PLUS</span>` : `<button class="tag tag-outline" data-go="plus">开通 Plus</button>`}</div>
+          <div class="sec row gap6" style="margin-top:-4px;flex-wrap:nowrap"><span class="faint small ell">身份</span><span class="tag tag-gold">积分会员</span></div>
           <div class="sec">${rest.map(getCard).join('')}</div>` : ''}
-          <div class="sec card group" data-go="membership"><span class="group-ic">${icon('crown')}</span><div class="grow"><div class="bold ell">晓艾家付费会籍</div><div class="muted small ell">体验卡、季卡、年卡</div></div>${icon('right', 'faint')}</div>
           ${ui.sec('领卡说明')}
           <div class="sec card"><ul class="policy">
             <li>门店会员卡由门店提供，晓艾会按 Plus 或成长等级匹配档位，免费领取</li>

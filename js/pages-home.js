@@ -48,7 +48,7 @@
   ui.price = (v, cls) => `<span class="price ${cls || ''}"><small>¥</small>${XA.money(v)}</span>`;
   ui.disclaimer = (text) => `<div class="disclaimer">${icon('info')}<span>${text || XA.DISCLAIMER}</span></div>`;
   ui.sec = (title, more, go) => `<div class="sec-title"><h3>${title}</h3>${more ? `<button class="more" data-go="${go}">${more}${icon('right', 'ic-s')}</button>` : ''}</div>`;
-  ui.brandTag = () => `<span class="tag tag-orange">晓艾精选</span>`;
+  ui.brandTag = () => '';
   ui.empty = (text, btn, go) => `<div class="empty">${XA.art('leaf', 'sage', 'empty-art')}<div class="empty-t">${text}</div>${btn ? `<button class="btn btn-primary mt16" data-go="${go}">${btn}</button>` : ''}</div>`;
   ui.avatar = (name, cls) => `<span class="avatar ${cls || ''}">${esc(String(name).slice(0, 1))}</span>`;
 
@@ -59,8 +59,8 @@
       ${ui.cover(p, 'fcard-img')}
       <div class="fcard-bd">
         <div class="fcard-title">${esc(p.title)}</div>
-        <div class="fcard-tags"><span class="tag tag-outline">好物</span>${ui.brandTag(b)}<span class="faint small">${b.name}</span>${fit ? `<span class="tag tag-orange">适合您的体质</span>` : ''}</div>
-        <div class="fcard-ft">${ui.price(mp)}${mp < p.price ? `<span class="tag tag-gold">${XA.priceTag()}</span>` : ''}<span class="grow"></span><span class="faint small">${p.soldOut ? '已售罄' : '已售 ' + XA.wan(p.sales)}</span></div>
+        <div class="fcard-tags"><span class="faint small">${b.name}</span></div>
+        <div class="fcard-ft">${ui.price(mp)}${mp < p.price ? `<span class="tag tag-gold">${XA.priceTag()}</span>` : ''}<span class="grow"></span>${p.soldOut ? '<span class="faint small">已售罄</span>' : ''}</div>
       </div>
     </div>`;
   };
@@ -68,13 +68,13 @@
   ui.productGrid = (p, source, fit) => {
     const b = D.brands[p.brand], mp = XA.memberPrice(p, XA.defaultOpts(p));
     return `<div class="pcard ${p.soldOut ? 'soldout' : ''}" data-go="product?id=${p.id}&source=${source || 'feed'}">
-      <div class="pcard-img">${ui.cover(p)}${fit ? `<em class="pcard-fit">适合您的体质</em>` : ''}${p.soldOut ? `<em class="pcard-out">已售罄</em>` : ''}</div>
+      <div class="pcard-img">${ui.cover(p)}${p.soldOut ? `<em class="pcard-out">已售罄</em>` : ''}</div>
       <div class="pcard-bd">
         <div class="pcard-title">${esc(p.title)}</div>
         <div class="pcard-brand">${ui.brandTag(b)}<span class="faint small ell">${b.name}</span></div>
         <div class="pcard-ft">
-          <div class="grow">${ui.price(mp)}<div class="faint small ell">${mp < p.price ? `<span class="c-gold">${XA.priceTag()}</span> · ` : ''}已售 ${XA.wan(p.sales)}</div></div>
-          ${p.soldOut ? '' : `<button class="pcard-add" aria-label="加入购物车" onclick="event.stopPropagation();XA.act.quickAdd('${p.id}','${source || 'feed'}')">${icon('cart')}</button>`}
+          <div class="grow">${ui.price(mp)}${mp < p.price ? `<div class="faint small ell"><span class="c-gold">${XA.priceTag()}</span></div>` : ''}</div>
+          ${p.soldOut ? '' : `<button class="pcard-add" aria-label="查看购买入口" onclick="event.stopPropagation();XA.act.buyExternal('${p.id}')">${icon('right')}</button>`}
         </div>
       </div>
     </div>`;
@@ -92,7 +92,7 @@
         <div class="kcard-title">${esc(c.title)}</div>
         <div class="kcard-teacher">${ui.avatar(c.teacher, 'xs')}<span>${c.teacher} · ${c.teacherTitle}</span></div>
         <div class="kcard-ft">
-          ${own ? `<span class="tag tag-green">已订阅</span>` : `<span class="kcard-price">¥${c.price}<small> / 全 ${c.lessons.length} 讲</small></span>`}
+          ${own ? `<span class="tag tag-green">已订阅</span>` : `<span class="faint small">可免费试看</span>`}
           <span class="grow"></span>
           <span class="btn btn-sm kcard-btn">${own ? '继续学习' : '免费试看'}</span>
         </div>
@@ -124,12 +124,13 @@
     const type = XA.state.constitution && XA.state.constitution.type;
     let list = FEED.map(([k, id]) => ({ k, it: getItem(k, id) }));
     list = list.filter(x=>x.it);
-    for (const [k,rows] of [['p',D.products],['c',D.courses],['a',D.articles],['n',D.notes]]) {
+    list = list.filter(x => x.k !== 'c');
+    for (const [k,rows] of [['p',D.products],['a',D.articles],['n',D.notes]]) {
       const existing = new Set(list.filter(x=>x.k===k).map(x=>x.it.id));
       list.unshift(...rows.filter(row=>!existing.has(row.id)).map(it=>({k,it})));
     }
     if (tab === 'all') list = list.filter((x) => x.k === 'n');
-    else if (tab === 'c' || tab === 'p') list = list.filter((x) => x.k === tab);
+    else if (tab === 'p') list = list.filter((x) => x.k === tab);
     else list = [];
     list.forEach((x) => (x.fit = !!(type && x.it.fit && x.it.fit.includes(type))));
     if (type) list = list.filter((x) => x.fit).concat(list.filter((x) => !x.fit)); // 体质标签加权：匹配项前置
@@ -169,7 +170,7 @@
     const today = XA.d.key(new Date());
     const live = (slot) => slot.enabled && (!slot.start || slot.start <= today) && (!slot.end || slot.end >= today);
     const { notice } = D.homeResources;
-    return `<div class="sec">${constitutionCard()}</div>${live(notice) ? `<div class="sec"><button class="home-notice" data-go="${esc(notice.route)}">
+    return `<div class="sec">${constitutionCard()}</div>${live(notice) && !/^(?:#\/)?(?:course|lesson|my-courses)(?:\?|$)/.test(notice.route || '') ? `<div class="sec"><button class="home-notice" data-go="${esc(notice.route)}">
       <strong>公告</strong><span>${esc(notice.title)}</span>${icon('right','ic-s')}</button></div>` : ''}`;
   }
 
@@ -261,7 +262,7 @@
       { tone: 'season', title: campaign.title || '立冬养藏', sub: '当季活动', art: campaign.art || ['season', 'mist'], media: campaign.bannerMedia, image: campaign.image, go: campaign.route || 'article?id=a1' },
       { tone: 'point', title: '按体质配穴', sub: '测完自动推荐艾灸组合', art: ['moxa', 'sage'], go: 'formula' },
       { tone: 'solar', title: season.name + '养生', sub: '看看这个节气可以做的小事', art: ['leaf', 'mist'], go: 'solar' },
-    ];
+    ].filter(item => !/^(?:#\/)?(?:course|lesson|my-courses)(?:\?|$)/.test(item.go || ''));
     const slide = (item) => {
       const artwork = item.media ? XA.mediaPreview(item.media) : item.image ? `<img src="${esc(item.image)}" alt="">` : ui.art(item.art, 'campaign-art');
       const action = item.act ? `onclick="XA.act.${item.act}()"` : `data-go="${esc(item.go)}"`;
@@ -345,7 +346,7 @@
     return `${ui.sec('节气养生', '查看更多', 'solar')}<div class="solar-list">${solarMonths(now).map((group) => `<div class="solar-month">${group.month}月</div>${group.terms.map((term) => solarCard(term, now)).join('')}`).join('')}</div>`;
   };
   const introHome = () => `<div class="feed home-intro">
-      <div class="card"><div class="bold">认识晓艾</div><div class="muted small mt4">晓艾是您的养生小助手：帮您自测体质，定制专属艾灸调理方案；顺应节气顺势养护，学习穴位与艾灸知识，在家安心艾灸；也可查找周边门店，预约专业调理服务。</div></div>
+      <div class="card"><div class="bold">认识晓艾</div><div class="muted small mt4">晓艾是您的养生小助手：帮您自测体质，定制专属艾灸调理方案；顺应节气顺势养护，学习穴位与艾灸知识，在家安心艾灸；也可查找周边门店。</div></div>
       <div class="card"><div class="bold">调养参考</div><div class="cells mt8">
         <div class="cell" data-go="moxa-origin"><span class="cell-ic">${icon('leaf')}</span><div class="cell-bd"><div class="bold">艾材溯源品鉴</div><div class="muted small">挑选艾材时，先了解成色与年份的分辨要点。</div></div>${icon('right','faint')}</div>
         <div class="cell" data-go="moxa-guide"><span class="cell-ic">${icon('package')}</span><div class="cell-bd"><div class="bold">艾材选用指南</div><div class="muted small">不同形态适合不同场景，按使用习惯选择更顺手。</div></div>${icon('right','faint')}</div>
@@ -384,7 +385,7 @@
   const careHome = () => {
     const goods = D.products.filter((p) => !p.soldOut).slice(0, 3);
     const entries = [
-      ['store', 'store', '找门店', '预约到店艾灸', 'a'],
+      ['store', 'store', '找门店', '查看附近门店', 'a'],
       ['timer', 'timer', '艾灸计时', '在家按穴位温灸', 'd'],
       ['acupoints', 'body', '穴位图谱', '帮您找准位置', 'b'],
       [XA.state.constitution ? 'profile' : 'test', 'quiz', XA.state.constitution ? '体质档案' : '体质测试', XA.state.constitution ? XA.state.constitution.type : '约 3 分钟了解自己', 'c'],
@@ -409,17 +410,17 @@
     nav: 'none',
     render() {
       if (XA.isCare()) return careHome();
-      const tabs = ['intro', 'all', 'p', 'solar', 'c'];
+      const tabs = ['intro', 'all', 'p', 'solar'];
       const tab = tabs.includes(XA.tmp.homeTab) ? XA.tmp.homeTab : 'intro';
       const tools = [['test', 'quiz', '体质测试', 'a'], ['acupoints', 'body', '穴位图谱', 'b'], ['symptoms', 'target', '对症找穴', 'c'], ['timer', 'timer', '艾灸计时', 'd']];
       const plays = [['formula', 'leaf', '配穴方案', 'a'], ['journal', 'calendar', '养生日志', 'b'], ['pointfav', 'star', '穴位收藏', 'c'], ['ask', 'info', '养生问答', 'd']];
-      const chips = [['intro', '介绍'], ['all', '笔记'], ['p', '好物'], ['solar', '节气'], ['c', '课程']];
+      const chips = [['intro', '介绍'], ['all', '笔记'], ['p', '好物'], ['solar', '节气']];
       const feed = tab === 'intro' ? introHome() : tab === 'solar' ? solarHome() : `<div class="feed">${feedHtml()}</div><div class="end">已经到底了</div>`;
       return `
       <div class="home-hd">
         <div class="home-brand"><span class="logo-dot">艾</span><span class="wordmark">晓艾</span></div>
         ${locationChip()}
-        <button class="searchbar" data-go="search">${icon('search')}<span>搜穴位、商品、课程</span></button>
+        <button class="searchbar" data-go="search">${icon('search')}<span>搜穴位、商品、文章</span></button>
       </div>
       ${activityBanner()}
       <div class="tools-board">
@@ -434,9 +435,14 @@
     },
     mounted() {
       if (XA.isCare()) return;
-      const onTag = XA.$('.ref-tags .chip.on');
-      if (onTag && onTag.scrollIntoView) onTag.scrollIntoView({ inline: 'nearest', block: 'nearest' });
       const tagRow = XA.$('.ref-tags');
+      const onTag = tagRow && tagRow.querySelector('.chip.on');
+      if (onTag) {
+        // 只滚动标签行，避免把首页纵向拉到推荐区。
+        const row = tagRow.getBoundingClientRect(), chip = onTag.getBoundingClientRect();
+        const delta = chip.left < row.left ? chip.left - row.left : Math.max(0, chip.right - row.right);
+        if (delta && row.width) tagRow.scrollLeft += delta * tagRow.clientWidth / row.width;
+      }
       if (tagRow && !tagRow.dataset.drag) {
         tagRow.dataset.drag = '1';
         let active = false, moved = false, x = 0, left = 0, pointer = 0;
@@ -1397,7 +1403,7 @@
     render(q) {
       const kw = (q.q || '').trim();
       const box = `<div class="search-top">
-        <div class="searchbar input">${icon('search')}<input id="kw" type="search" placeholder="搜穴位、商品、课程" value="${esc(kw)}" onkeydown="if(event.key==='Enter')XA.act.search(this.value)"></div>
+        <div class="searchbar input">${icon('search')}<input id="kw" type="search" placeholder="搜穴位、商品、文章" value="${esc(kw)}" onkeydown="if(event.key==='Enter')XA.act.search(this.value)"></div>
         <button class="btn btn-primary btn-sm" onclick="XA.act.search(document.getElementById('kw').value)">搜索</button>
       </div>`;
       if (!kw) {
@@ -1412,11 +1418,10 @@
       const pts = D.points.filter((p) => has(p.name, p.part, p.benefit));
       const sym = D.symptoms.filter((s) => has(s.name));
       const prods = D.products.filter((p) => has(p.title, p.kw, p.category, p.subcategory, p.tags, D.brands[p.brand].name));
-      const cours = D.courses.filter((c) => has(c.title, c.intro, c.lessons.map((l) => l.t).join(' ')));
       const arts = D.articles.filter((a) => has(a.title, a.category, a.tags, a.body.join(' ')));
       const notes = D.notes.filter((n) => has(n.title, n.category, n.tags, n.body.join(' ')));
       const brands = Object.values(D.brands).filter((b) => has(b.name));
-      const total = pts.length + sym.length + prods.length + cours.length + arts.length + notes.length + brands.length;
+      const total = pts.length + sym.length + prods.length + arts.length + notes.length + brands.length;
       if (!total) return `${box}${ui.empty(`没有找到「${esc(kw)}」相关内容`, '', '')}<div class="center muted small">可以换个词试试，比如「艾条」「泡脚」</div>`;
       return `${box}
         ${brands.length ? ui.sec('品牌') + `<div class="cells sec">${brands.map((b) => `<div class="cell" data-go="brand?id=${b.id}">${ui.art(b.art, 'cell-art')}<div class="cell-bd"><div class="bold">${b.name} ${ui.brandTag(b)}</div><div class="muted small">${b.slogan}</div></div>${icon('right', 'faint')}</div>`).join('')}</div>` : ''}
@@ -1425,7 +1430,7 @@
           ${pts.slice(0, 4).map((p) => `<div class="cell" data-go="acupoint?id=${p.id}"><span class="cell-ic">${icon('body')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div>${icon('right', 'faint')}</div>`).join('')}
         </div>` : ''}
         ${prods.length ? ui.sec('好物') + `<div class="feed">${prods.map((p) => ui.productCard(p, 'search')).join('')}</div>` : ''}
-        ${cours.length || arts.length ? ui.sec('课程与文章') + `<div class="feed">${cours.map((c) => ui.courseCard(c)).join('')}${arts.map((a) => ui.articleCard(a)).join('')}</div>` : ''}
+        ${arts.length ? ui.sec('文章') + `<div class="feed">${arts.map((a) => ui.articleCard(a)).join('')}</div>` : ''}
         ${notes.length ? ui.sec('笔记') + `<div class="feed">${notes.map((n) => ui.noteRow(n)).join('')}</div>` : ''}
         <div class="end">已经到底了</div>`;
     },
@@ -1474,33 +1479,12 @@
   });
 
   /* ---------- 专栏课程（P1：试看 + 购买引导） ---------- */
-  /* 课程：Plus / 钻石 八折；白银～黄金 九五折 */
-  const coursePrice = (c, plus = XA.isPlus()) => {
-    if (!XA.state.loggedIn) return c.price;
-    const lv = XA.level().lv;
-    if (plus || lv >= 4) return Math.round(c.price * 0.8 * 100) / 100;
-    if (lv >= 2) return Math.round(c.price * 0.95 * 100) / 100;
-    return c.price;
-  };
   XA.act.lesson = (cid, i) => {
     const c = D.course(cid), l = c.lessons[i];
     if (l.trial || XA.state.courses.includes(cid)) return XA.go(`lesson?c=${cid}&i=${i}`);
-    XA.modal({ title: '订阅后可学习', content: `本讲为付费内容。订阅专栏后可学习全部 ${c.lessons.length} 讲，共 ${c.lessons.filter((x) => x.trial).length} 讲可免费试看。`, confirmText: '去订阅', cancelText: '再看看', onConfirm: () => XA.act.buyCourse(cid) });
+    XA.modal({ title: '课程暂不可购买', content: '目前可观看免费试看内容。', confirmText: '知道了' });
   };
-  XA.act.buyCourse = (cid) => XA.needLogin(() => {
-    if (XA.state.courses.includes(cid)) return XA.toast('已订阅该课程');
-    const c = D.course(cid);
-    XA.purchase({ title:'专栏订阅 · ' + c.title, quote: bundle => {
-      const amount = coursePrice(c, bundle || XA.isPlus());
-      return {amount, detail:'课程实付 ¥' + XA.money(amount)};
-    }, success: ({amount:amt}, payment) => {
-      XA.state.courses.push(cid);
-      XA.state.orders.unshift({ id: XA.uid('XA'), kind: 'course', ...payment, ref: cid, title: c.title, art: c.art, amount: amt, points: Math.floor(amt), status: 'done', at: new Date().toISOString() });
-      XA.addPoints(Math.floor(amt), '课程订阅实付积分', Math.floor(amt));
-      XA.toast('订阅成功，开始学习吧', true);
-      XA.refresh();
-    } });
-  });
+  XA.act.buyCourse = () => XA.toast('课程暂不可购买');
   XA.page('course', {
     title: '专栏课程',
     render(q) {
@@ -1522,11 +1506,9 @@
       <div class="sec">${ui.disclaimer()}</div>`;
     },
     footer(q) {
-      const c = D.course(q.id) || D.courses[0], own = XA.state.courses.includes(c.id), amt = coursePrice(c);
+      const c = D.course(q.id) || D.courses[0], own = XA.state.courses.includes(c.id);
       if (own) return `<button class="btn btn-primary btn-block" onclick="XA.act.lesson('${c.id}',0)">继续学习</button>`;
-      return `<div class="foot-price">${ui.price(amt, 'lg')}${amt < c.price ? `<div class="small"><span class="tag tag-gold">${XA.isPlus() || XA.level().lv >= 4 ? (XA.isPlus() ? 'Plus 8 折' : '钻石 8 折') : '会员 95 折'}</span> <span class="del faint">¥${c.price}</span></div>` : ''}</div>
-        ${c.lessons.some(l=>l.trial) ? `<button class="btn btn-tonal" onclick="XA.act.lesson('${c.id}',${c.lessons.findIndex(l=>l.trial)})">免费试看</button>` : ''}
-        <button class="btn btn-primary grow" onclick="XA.act.buyCourse('${c.id}')">订阅专栏</button>`;
+      return c.lessons.some(l => l.trial) ? `<button class="btn btn-tonal btn-block" onclick="XA.act.lesson('${c.id}',${c.lessons.findIndex(l => l.trial)})">免费试看</button>` : '';
     },
   });
   XA.page('lesson', {
@@ -1547,7 +1529,6 @@
       </div>
       <div class="sec">
         ${next ? `<button class="btn btn-tonal btn-block" onclick="XA.act.lesson('${c.id}',${i + 1})">下一讲：${esc(next.t.replace(/^第 \d+ 讲 /, ''))}</button>` : `<div class="center muted">已是最后一讲</div>`}
-        ${own ? '' : `<button class="btn btn-primary btn-block mt12" onclick="XA.act.buyCourse('${c.id}')">订阅专栏，学习全部 ${c.lessons.length} 讲</button>`}
       </div>
       <div class="sec">${ui.disclaimer()}</div>`;
     },

@@ -23,7 +23,7 @@
       XA.memberSession();data=request('read');
       if(!data.storeId&&data.stores.length){selected=data.stores[0].id;data=request('read');}
     }catch(e){return '<div class="sec card">'+esc(e.message)+'</div>';}
-    if(!data.storeId)return '<div class="sec card"><h2>您还没有到店记录</h2><p class="muted small mt8">预约或到店消费后，服务进度、账单和余额会自动出现在这里。</p><button class="btn btn-tonal mt12" data-go="store">去预约</button></div>';
+    if(!data.storeId)return '<div class="sec card"><h2>您还没有到店记录</h2><p class="muted small mt8">到店消费后，服务进度、账单和余额会自动出现在这里。</p><button class="btn btn-tonal mt12" data-go="store">查看门店</button></div>';
     selected=data.storeId;
     const switcher=data.stores.length>1?'<select onchange="XA.go(\'service-bills?store=\'+encodeURIComponent(this.value),true)">'+data.stores.map(s=>'<option value="'+esc(s.id)+'" '+(s.id===selected?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select>':'';
     return '<div class="sec card">'+switcher+'<div class="muted">'+esc(data.store)+' · '+esc(data.name)+'</div><h2>门店余额 '+money(data.balance)+'</h2><label>自助充值 <select id="bill-topup"><option value="100">¥100</option><option value="300">¥300</option><option value="500">¥500</option></select></label> <button class="btn btn-tonal btn-sm" onclick="XA.act.billTopup()">演示充值</button> <button class="link" onclick="XA.refresh()">刷新账单</button></div>'+data.bills.map(b=>{

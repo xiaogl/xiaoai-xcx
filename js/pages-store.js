@@ -5,6 +5,7 @@
  */
 (function () {
   const D = XA.data, icon = XA.icon, ui = XA.ui, esc = XA.esc;
+  const STORE_BOOKING_ENABLED = false;
   const short = (s) => s.name.replace('晓艾家 · ', '');
   const minPrice = (s) => (s.linked ? Math.min.apply(null, s.services.map((id) => D.service(id).mprice)) : 99999);
   const isOpen = (s) => {
@@ -27,7 +28,7 @@
     { id: 'fit', name: '体质配穴', art: 'leaf', tone: 'mist' },
   ];
   XA.act.sfProject = (id) => { F().project = id; XA.refresh(); };
-  const SORTS = { smart: '智能排序', distance: '离我最近', popular: '人气优先', rating: '好评优先', low: '价格最低', high: '价格最高' };
+  const SORTS = { smart: '智能排序', distance: '离我最近' };
   /* 门店类型：自营旗舰 / 品牌连锁 / 加盟店（未接入门店无门店类型，不参与此筛选） */
   const STORE_TYPE = { xaj: '自营旗舰', yq: '品牌连锁', biz: '加盟店' };
   const radii = { '500米': 0.5, '1km': 1, '2km': 2, '5km': 5 };
@@ -56,7 +57,7 @@
   };
   function filterStores(f) {
     const list = D.stores.filter((s) => {
-      if (s.city !== f.city || (f.brand && (!s.linked || s.brand !== f.brand))) return false;
+      if (s.city !== f.city || (f.brand && s.brand !== f.brand)) return false;
       if (f.kw && !(s.name + s.district + s.area + s.address).includes(f.kw)) return false;
       if (f.area in radii) return D.withinRadius(s, radii[f.area]);
       if (f.areaType === 'metro') return s.metro === f.area;
@@ -70,7 +71,7 @@
     });
     const dist = (s) => s.km ?? Infinity;
     const by = {
-      smart: (a, b) => Number(!!b.rec) - Number(!!a.rec) || Number(b.linked) - Number(a.linked) || (b.rating || 0) - (a.rating || 0),
+      smart: (a, b) => Number(!!b.rec) - Number(!!a.rec) || dist(a) - dist(b),
       distance: (a, b) => dist(a) - dist(b),
       popular: (a, b) => (b.reviews || 0) - (a.reviews || 0) || (b.rating || 0) - (a.rating || 0),
       rating: (a, b) => (b.rating || 0) - (a.rating || 0),
@@ -81,17 +82,17 @@
   }
   /* 门店卡片（列表、笔记挂载等处复用）。已接入：可预约；未接入：只有基础信息 + 来源 */
   ui.storeCard = (s, hl) => {
-    if (!s.linked) {
+    if (!STORE_BOOKING_ENABLED || !s.linked) {
       return `<div class="scard scard-un" data-go="store-detail?id=${s.id}">
         <div class="scard-img un">${icon('store')}</div>
         <div class="scard-bd">
           <div class="scard-name">${s.name}</div>
-          <div class="scard-meta"><span class="sb sb-un">待认领</span><span class="faint">${s.cat}</span><span class="grow"></span>${s.km != null ? `<span class="dist">${icon('pin', 'ic-xs')}${D.kmText(s)}</span>` : ''}</div>
+          <div class="scard-meta"><span class="sb sb-un">未入驻</span><span class="faint store-brand">${esc(s.brand === 'biz' ? (s.cat || '艾灸养生') : (D.storeBrands[s.brand]?.name || s.cat || '艾灸养生'))}</span><span class="grow"></span>${s.km != null ? `<span class="dist">${icon('pin', 'ic-xs')}${D.kmText(s)}</span>` : ''}</div>
           <div class="scard-sub ell">${s.district} · ${s.area} · 营业 ${s.hours || '待维护'}</div>
-          <div class="scard-sub faint">信息来源：${s.src}</div>
+          <div class="scard-sub">可查看官方团购套餐与到店服务</div>
           <div class="scard-foot">
             <span></span>
-            <span class="row gap6"><button class="link" onclick="event.stopPropagation();XA.act.partner('claim','${s.id}')">认领门店</button><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();XA.act.call('${s.id}')">电话</button><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();XA.act.navTo('${s.id}')">导航</button></span>
+            <span class="row gap6"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();XA.act.goMeituan('${s.id}')">查看团购 ${icon('right','ic-xs')}</button><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();XA.act.navTo('${s.id}')">导航</button></span>
           </div>
         </div>
       </div>`;
@@ -208,7 +209,7 @@
         <div class="near-columns"><div class="near-modes"><button type="button" data-mode="district">商圈</button>${lines.length ? '<button type="button" data-mode="metro">地铁</button>' : ''}</div><div class="near-groups"></div><div class="near-items"></div></div>
       </div>`;
     /* 门店类型选项只统计已接入门店，未接入门店不归入任何类型 */
-    const typeIds = [...new Set(cityStores.filter((s) => s.linked).map((s) => s.brand))].filter((id) => STORE_TYPE[id]);
+    const typeIds = [...new Set(cityStores.map((s) => s.brand))].filter((id) => STORE_TYPE[id]);
     return menuOn(areaLabel, nearby, !!f.area)
       + menuOn(SORTS[f.sort], group('排序方式', Object.entries(SORTS).map(([id, label]) => option('sort', id, label))), f.sort !== 'smart')
       + menuOn(f.brand ? STORE_TYPE[f.brand] : '门店类型', group('门店类型', [option('brand', '', '全部类型'), ...typeIds.map((id) => option('brand', id, STORE_TYPE[id]))]), !!f.brand);
@@ -231,9 +232,8 @@
       </div>
       <div class="proj-rail">${PROJECTS.map((p) => `<button type="button" class="proj ${f.project === p.id ? 'on' : ''}" onclick="XA.act.sfProject('${p.id}')"><span class="proj-art ${f.project === p.id ? 'proj-on' : ''}">${XA.art(p.art, p.tone)}</span><span class="proj-name">${p.name}</span></button>`).join('')}</div>
       ${list.length ? `<div class="slist">${list.map((s) => ui.storeCard(s)).join('')}</div>
-        <div class="end">没有更多门店了<br>「未接入」门店信息来自地图服务，仅供您参考</div>` :
-        `<div class="empty">${XA.art('room', 'sage', 'empty-art')}<div class="empty-t">没有符合条件的门店</div><div class="muted small">您可以减少几个筛选条件再试</div></div>`}
-      <div class="sec"><button class="btn btn-tonal btn-block" onclick="XA.act.partner('new')">没找到合适的门店？可申请入驻</button></div>`;
+        <div class="end">没有更多门店了<br>门店信息仅供参考，请以实际情况为准</div>` :
+        `<div class="empty">${XA.art('room', 'sage', 'empty-art')}<div class="empty-t">没有符合条件的门店</div><div class="muted small">您可以减少几个筛选条件再试</div></div>`}`;
     },
   });
 
@@ -280,6 +280,7 @@
     XA.sheet({ title: '导航到门店', html: `<div class="muted small">${s.address}</div><div class="radios mt12">${['微信内置地图', '腾讯地图', '高德地图'].map((m) => `<button class="radio" onclick="XA.closeSheet();XA.toast('已打开${m}（演示）',true)"><span class="bold">${m}</span>${icon('right', 'faint')}</button>`).join('')}</div>` });
   };
   XA.act.call = (id) => { const s = D.storeOf(id); XA.modal({ title: s.phone, content: `${s.name}　营业时间 ${s.hours || '营业时间待维护'}`, confirmText: '呼叫', onConfirm: () => XA.toast('正在拨号（演示）') }); };
+  XA.act.goMeituan = () => XA.modal({ title: '查看美团团购', content: '美团跳转入口为演示，暂未接入实际跳转。', confirmText: '知道了' });
   /* 未接入门店：用户可以表达"希望接入"，商家可以申请接入 */
   XA.act.wish = (id) => { const w = XA.state.wish; if (!w.includes(id)) w.push(id); XA.save(); XA.toast('已记录。这家店接入后会通知您', true); XA.refresh(); };
   const applications = { new: '门店入驻', claim: '认领我的门店', dealer: '成为经销商', franchise: '成为加盟商' };
@@ -324,12 +325,11 @@
   ];
   const unlinkedDetail = (s) => {
     const wished = XA.state.wish.includes(s.id);
-    const near = D.stores.filter((x) => x.city === s.city && x.linked && !x.soon).sort((a, b) => Math.abs((a.km || 0) - (s.km || 0)) - Math.abs((b.km || 0) - (s.km || 0))).slice(0, 2);
     return `
-      <div class="un-hd">${icon('store')}<span>暂无门店照片</span></div>
+      <div class="un-hd"><span>门店信息</span></div>
       <div class="sec card">
         <h1 class="h2">${s.name}</h1>
-        <div class="scard-meta mt4"><span class="sb sb-un">未接入晓艾</span><span class="faint">${s.cat} · ${s.district} ${s.area}</span></div>
+        <div class="scard-meta mt4"><span class="sb sb-un">未入驻</span><span class="faint store-brand">${esc(s.brand === 'biz' ? (s.cat || '艾灸养生') : (D.storeBrands[s.brand]?.name || s.cat || '艾灸养生'))} · ${esc(s.district)} ${esc(s.area)}</span></div>
       </div>
       <div class="sec card addr">
         <div class="grow" onclick="XA.act.navTo('${s.id}')"><div class="bold">${s.address}</div><div class="muted small">${s.km != null ? `距您 ${D.kmText(s)}` : s.city}</div></div>
@@ -338,21 +338,19 @@
       </div>
       <div class="sec card">
         <div class="kv"><b>营业时间</b><span>${s.hours || '营业时间待维护'}</span></div>
-        <div class="kv"><b>联系电话</b><span>${s.phone}</span></div>
-        <div class="kv"><b>信息来源</b><span>${s.src}<br><span class="faint small">仅供参考，请以门店实际情况为准</span></span></div>
+        <div class="kv"><b>联系电话</b><span>${s.phone || '待维护'}</span></div>
       </div>
-      <div class="sec tipbox">${icon('info')}<span>这家门店还没有接入晓艾，暂不支持在线预约和团购券核销，到店消费也无法累计晓艾会积分。</span></div>
+      <div class="sec tipbox">${icon('info')}<span>这家门店暂未入驻晓艾，可查看美团团购套餐与到店服务。</span></div>
       <div class="sec">
-        <button class="btn ${wished ? 'btn-gray' : 'btn-tonal'} btn-block" ${wished ? '' : `onclick="XA.act.wish('${s.id}')"`}>${wished ? '已记录，接入后通知您' : '希望这家店接入晓艾'}</button>
-        <button class="btn btn-ghost btn-block mt8" onclick="XA.act.partner('claim','${s.id}')">我是店长，认领这家门店</button>
-      </div>
-      ${near.length ? ui.sec('附近可预约的门店', '全部门店', 'store') + `<div class="slist">${near.map((x) => ui.storeCard(x)).join('')}</div>` : ''}`;
+        <button class="btn btn-primary btn-block" onclick="XA.act.goMeituan('${s.id}')">${icon('store','ic-s')} 查看官方团购 ${icon('right','ic-xs')}</button>
+        <button class="btn ${wished ? 'btn-gray' : 'btn-tonal'} btn-block mt8" ${wished ? '' : `onclick="XA.act.wish('${s.id}')"`}>${wished ? '已记录，接入后通知您' : '希望这家店接入晓艾'}</button>
+      </div>`;
   };
   XA.page('store-detail', {
     title: '门店详情',
     render(q) {
       const s = D.storeOf(q.id);
-      if (!s.linked) return unlinkedDetail(s);
+      if (!STORE_BOOKING_ENABLED || !s.linked) return unlinkedDetail(s);
       const next = D.nextSlot(s), open = isOpen(s), B = D.storeBrands[s.brand];
       const acts = D.activities.filter((a) => a.store === s.id);
       return `
@@ -408,9 +406,7 @@
     },
     footer(q) {
       const s = D.storeOf(q.id);
-      if (!s.linked || !s.services?.length) return `<button class="fbtn" onclick="XA.act.call('${s.id}')">${icon('phone')}<span>电话</span></button><button class="btn btn-primary grow" onclick="XA.act.navTo('${s.id}')">导航到店</button>`;
-      if (s.soon) return `<button class="btn btn-primary btn-block" onclick="XA.act.openRemind('${s.id}')">开业提醒我</button>`;
-      return `<button class="fbtn" onclick="XA.act.call('${s.id}')">${icon('phone')}<span>电话</span></button><button class="fbtn" onclick="XA.act.navTo('${s.id}')">${icon('nav')}<span>导航</span></button><button class="btn btn-primary grow" data-go="booking?store=${s.id}">立即预约</button>`;
+      return `<button class="fbtn" onclick="XA.act.call('${s.id}')">${icon('phone')}<span>电话</span></button><button class="btn btn-primary grow" onclick="XA.act.goMeituan('${s.id}')">${icon('store','ic-s')} 查看团购</button>`;
     },
   });
 
@@ -435,6 +431,7 @@
   };
 
   const BK = (q) => {
+    if (!STORE_BOOKING_ENABLED) return null;
     const key = [q.store, q.service, q.wait, q.gp].join('|');
     let bk = XA.tmp.bk;
     if (!bk || bk.key !== key) {
@@ -473,6 +470,7 @@
     }
   }
   XA.act.bkSubmit = () => {
+    if (!STORE_BOOKING_ENABLED) return XA.toast('门店暂不支持预约');
     const bk = XA.tmp.bk;
     if (!bk.time) return XA.toast('请先选择到店时间');
     XA.needLogin(() => {
@@ -517,7 +515,7 @@
     title: '预约到店',
     render(q) {
       const bk = BK(q);
-      if (!bk) return ui.empty('当前门店、服务或候补名额不可预约', '重新选择门店', 'store');
+      if (!bk) return ui.empty('门店暂未入驻，请前往美团购买套餐', '查看门店', 'store');
       const store = D.storeOf(bk.store), staff = D.staffFor(store), g = bk.gp && D.grouponOf(bk.gp);
       return `
       <div class="sec card addr" data-go="store">
@@ -762,4 +760,6 @@
       return `<div class="grow">${p.name} ${ui.price(p.price, 'lg')}<div class="small faint ell">${XA.state.membership ? '续费后立即生效' : '开通后立即生效'}</div></div><button class="btn btn-primary" style="min-width:8.5rem" onclick="XA.act.planBuy()">${XA.state.membership ? '立即续费' : '立即开通'}</button>`;
     },
   });
+  XA.act.planBuy = () => XA.toast('会员暂不支持购买');
+  XA.page('membership', { title: '积分会员', render: () => `<div class="sec card">会员暂不支持购买。<button class="btn btn-tonal btn-block mt12" data-go="xahui">查看积分会员</button></div>` });
 })();

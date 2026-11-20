@@ -22,7 +22,7 @@
           <button class="club-heading" data-go="xahui"><strong>晓艾会</strong><span>我的会员卡 ${icon('right','ic-xs')}</span></button>
           <div class="me-user" data-go="xahui">
             ${ui.avatar(s.user.name, 'xl')}
-            <div class="grow"><div class="me-name ell">${s.user.name}</div><span class="lv-chip">${lv.name}${XA.isPlus() ? ' · Plus' : ''}</span></div>
+            <div class="grow"><div class="me-name ell">${s.user.name}</div><span class="lv-chip">积分会员</span></div>
           </div>
           <button class="btn btn-primary btn-block mt12" data-go="member-code">${icon('qr')}出示会员码</button>
         </div>
@@ -35,11 +35,11 @@
       <div class="sec card" data-go="${next ? 'appt?id=' + next.id : 'appts'}">
         <div class="row between"><span class="bold">我的预约</span><span class="more" data-go="appts">全部${icon('right', 'ic-s')}</span></div>
         ${next ? `<div class="next-appt"><div class="grow"><div class="appt-time ell">${XA.d.nice(next.date)} ${next.time}</div><div class="muted small ell">${D.storeOf(next.storeId).name}</div></div><span class="btn btn-primary btn-sm">核销码</span></div>` :
-          `<div class="next-appt"><div class="grow muted">您还没有预约</div><span class="btn btn-tonal btn-sm" data-go="store">去预约</span></div>`}
+          `<div class="next-appt"><div class="grow muted">您还没有预约</div><span class="btn btn-tonal btn-sm" data-go="store">查看门店</span></div>`}
       </div>
       <div class="cells sec"><button class="cell" data-go="service-bills">到店账单与余额</button>
         <div class="cell" data-go="orders"><span class="cell-ic">${icon('bag')}</span><div class="cell-bd">我的订单</div>${pending ? `<span class="tag tag-orange">${pending} 待收</span>` : ''}${icon('right', 'faint')}</div>
-        <div class="cell" data-go="plus"><span class="cell-ic gold">${icon('crown')}</span><div class="cell-bd">${XA.isPlus() ? '我的 Plus' : '开通 Plus'}</div>${icon('right', 'faint')}</div>
+        <div class="cell" data-go="xahui"><span class="cell-ic gold">${icon('crown')}</span><div class="cell-bd">积分会员</div>${icon('right', 'faint')}</div>
         <div class="cell" onclick="XA.wecom()"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">联系养生顾问</div>${icon('right', 'faint')}</div>
         <div class="cell" data-go="settings"><span class="cell-ic gray">${icon('settings')}</span><div class="cell-bd">设置</div>${icon('right', 'faint')}</div>
       </div>`;
@@ -61,24 +61,12 @@
       const lv = XA.level(), nx = nextLevel(), plus = XA.isPlus(), cnt = (st) => s.orders.filter((o) => o.status === st).length;
       const next = s.appts.filter((a) => a.status === 'booked').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
       const oi = [
-        ['online', 'bag', '线上订单', '小程序购买', cnt('toship') + cnt('shipped')],
+        ['online', 'bag', '线上订单', '历史订单', cnt('toship') + cnt('shipped')],
         ['offline', 'store', '线下订单', '门店消费', 0],
         ['third', 'receipt', '第三方订单', '京东·淘宝等', 0],
       ];
       const cups = s.coupons.filter((c) => !c.used).length;
-      const bens = plus ? [
-        ['coin', 'Plus 价', 'plus'],
-        ['truck', '全年包邮', 'plus'],
-        ['star', '积分双倍', 'plus'],
-        ['wallet', '门店卡包', 'perks'],
-        ['crown', '晓艾会', 'xahui'],
-      ] : [
-        ['coin', '会员价', 'xahui'],
-        ['ticket', '生日券', 'coupons'],
-        ['wallet', '门店卡包', 'perks'],
-        ['gift', '分享有礼', 'growth'],
-        ['crown', '晓艾会', 'xahui'],
-      ];
+      const bens = [['coin', '我的积分', 'points'], ['ticket', '优惠券', 'coupons'], ['qr', '会员码', 'member-code'], ['gift', '分享有礼', 'growth'], ['crown', '积分会员', 'xahui']];
       return `
       <div class="me-hd">
         <div class="me-card club-card">
@@ -86,19 +74,10 @@
           <div class="me-top">
             <div class="me-user" data-go="xahui">
               ${ui.avatar(s.user.name, 'xl')}
-              <div class="grow"><div class="me-name ell">${s.user.name}</div><span class="lv-chip">${lv.name}</span></div>
+              <div class="grow"><div class="me-name ell">${s.user.name}</div><span class="lv-chip">积分会员</span></div>
             </div>
-            <button class="me-plus ${plus ? 'on' : ''}" data-go="plus">
-              <span class="me-plus-ic">${icon('crown')}</span>
-              <div class="grow"><b>Plus 会员</b><span class="ell">${plus ? '权益已全开' : '付费权益包'}</span></div>
-              ${icon('right', 'ic-xs')}
-            </button>
           </div>
-          ${growthBar()}
           <div class="me-bens">${bens.map((b) => `<button data-go="${b[2]}"><span class="me-ben-ic">${icon(b[0])}</span><span>${/^[\u4e00-\u9fff]{4}$/.test(b[1]) ? b[1].slice(0, 2) + '<br>' + b[1].slice(2) : b[1]}</span></button>`).join('')}</div>
-          ${plus
-            ? `<div class="me-bar on" data-go="plus"><span class="ell">${icon('crown')}晓艾会 Plus · 至 ${s.plus.expire}</span><b>我的 Plus</b></div>`
-            : `<div class="me-bar" data-go="plus"><span class="ell">${icon('gift')}晓艾会 Plus · 查看专属权益</span><b>去开通</b></div>`}
         </div>
         <div class="me-assets">
           <button data-go="points"><b>${s.points}</b><span>积分</span></button>
@@ -107,7 +86,6 @@
           <button data-go="growth"><b class="ic">${icon('users')}</b><span>分享有礼</span></button>
         </div>
       </div>
-      ${typeof ui.walletPeek === 'function' ? ui.walletPeek() : ''}
       <div class="sec card">
         <div class="row between" data-go="orders"><span class="bold">我的订单</span><span class="more">全部订单${icon('right', 'ic-s')}</span></div>
         <button class="btn btn-tonal btn-block mt12" data-go="service-bills">到店账单与余额</button><div class="otypes mt12">${oi.map((o) => `<button class="otype otype-${o[0]}" data-go="orders?type=${o[0]}"><span class="otype-ic">${icon(o[1])}${o[4] ? `<em class="badge">${o[4]}</em>` : ''}</span><b>${o[2]}</b><span>${o[3]}</span></button>`).join('')}</div>
@@ -115,16 +93,15 @@
       <div class="sec card" data-go="${next ? 'appt?id=' + next.id : 'appts'}">
         <div class="row between"><span class="bold">我的预约</span><span class="more" data-go="appts">全部预约${icon('right', 'ic-s')}</span></div>
         ${next ? `<div class="next-appt"><div class="grow"><div class="appt-time ell">${XA.d.nice(next.date)} ${next.time}</div><div class="muted small ell">${D.storeOf(next.storeId).name} · ${D.service(next.serviceId).name}</div></div><span class="btn btn-primary btn-sm">核销码</span></div>` :
-          `<div class="next-appt"><div class="grow muted">您还没有预约，找一家离您近的门店</div><span class="btn btn-tonal btn-sm" data-go="store">去预约</span></div>`}
+          `<div class="next-appt"><div class="grow muted">您还没有预约</div><span class="btn btn-tonal btn-sm" data-go="store">查看门店</span></div>`}
       </div>
       <div class="sec">
         <div class="card group claim-entry" data-go="claim"><span class="group-ic">${icon('scan')}</span><div class="grow"><div class="bold">扫码补积分</div><div class="muted small ell">京东、淘宝、小店包裹里的积分码</div></div><button class="btn btn-tonal btn-sm" onclick="event.stopPropagation();XA.act.scanPoints()">去扫码</button></div>
       </div>
       ${ui.sec('我的服务')}
       <div class="cells sec">
-        <div class="cell" data-go="xahui"><span class="cell-ic gold">${icon('crown')}</span><div class="cell-bd">晓艾会<div class="faint small">${lv.name}${plus ? ' · Plus' : nx ? ' · 升' + nx.short : ''}</div></div>${icon('right', 'faint')}</div>
+        <div class="cell" data-go="xahui"><span class="cell-ic gold">${icon('crown')}</span><div class="cell-bd">积分会员<div class="faint small">查看积分与会员码</div></div>${icon('right', 'faint')}</div>
         <div class="cell" data-go="profile"><span class="cell-ic">${icon('body')}</span><div class="cell-bd">体质档案</div><span class="faint small">${s.constitution ? s.constitution.type : '未测试'}</span>${icon('right', 'faint')}</div>
-        <div class="cell" data-go="my-courses"><span class="cell-ic">${icon('book')}</span><div class="cell-bd">我的课程</div><span class="faint small">${s.courses.length ? s.courses.length + ' 门' : ''}</span>${icon('right', 'faint')}</div>
         <div class="cell" data-go="favs"><span class="cell-ic">${icon('star')}</span><div class="cell-bd">我的收藏</div>${icon('right', 'faint')}</div>
         <div class="cell" data-go="cart"><span class="cell-ic">${icon('cart')}</span><div class="cell-bd">购物车</div><span class="faint small">${s.cart.length ? s.cart.reduce((a, c) => a + c.qty, 0) + ' 件' : ''}</span>${icon('right', 'faint')}</div>
       </div>
@@ -132,7 +109,6 @@
       <div class="cells sec">
         <div class="cell" data-go="growth"><span class="cell-ic warm">${icon('gift')}</span><div class="cell-bd">分享有礼<div class="faint small">邀请 · 拼团 · 红包</div></div>${icon('right', 'faint')}</div>
         <div class="cell" data-go="promoter"><span class="cell-ic gold">${icon('megaphone')}</span><div class="cell-bd">推广中心<div class="faint small">${s.promoter.status === 'active' ? '可提现 ¥' + XA.money(s.promoter.balance) : '分享好物，获得佣金'}</div></div>${icon('right', 'faint')}</div>
-        <div class="cell" onclick="XA.act.partner('new')"><span class="cell-ic">${icon('store')}</span><div class="cell-bd">门店入驻<div class="faint small">申请开店 · 认领门店</div></div>${icon('right', 'faint')}</div>
         <div class="cell" onclick="XA.wecom()"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">联系养生顾问</div><span class="faint small">企业微信</span>${icon('right', 'faint')}</div>
         <div class="cell" data-go="settings"><span class="cell-ic gray">${icon('settings')}</span><div class="cell-bd">设置</div><span class="faint small">${s.careMode ? '长辈模式已开' : '大字、通知'}</span>${icon('right', 'faint')}</div>
       </div>
@@ -253,10 +229,9 @@
       const s = XA.state, lv = XA.level();
       return `<div class="mcode-page">
         <div class="card mcode-card">
-          <div class="row gap12">${ui.avatar(s.user.name, 'lg')}<div><div class="bold" style="font-size:1.125rem">${s.user.name}</div><div class="row gap6 mt4"><span class="tag tag-gold">${lv.short}</span>${XA.isPlus() ? `<span class="plus-badge">PLUS</span>` : ''}${s.membership ? `<span class="tag tag-green ell">晓艾家${s.membership.name}</span>` : ''}</div></div></div>
-          ${D.storePerks.some((x) => XA.hasPerk(x.id)) ? `<div class="row gap6 mt12" style="flex-wrap:wrap"><span class="faint small">已领门店权益</span>${D.storePerks.filter((x) => XA.hasPerk(x.id)).map((x) => `<span class="tag tag-green">${x.name}</span>`).join('')}</div>` : ''}
+          <div class="row gap12">${ui.avatar(s.user.name, 'lg')}<div><div class="bold" style="font-size:1.125rem">${s.user.name}</div><div class="row gap6 mt4"><span class="tag tag-gold">积分会员</span></div></div></div>
           <div id="mcode"></div>
-          <div class="muted small center">到店出示，识别成长等级、Plus 与门店权益</div>
+          <div class="muted small center">积分会员码</div>
           <div class="faint small center mt4 row gap4" style="justify-content:center">${icon('refresh', 'ic-xs')}<span id="mcodeT">30 秒后自动刷新</span></div>
         </div>
         <div class="small center" style="color:rgba(255,255,255,.75)">会员码仅供您到店识别，请勿截图发给他人</div>
@@ -407,7 +382,7 @@
         <li>一个积分码对应一笔订单，只能补登一次，补登后不可转给他人</li>
         <li>按订单实付金额计积分，1 元 = 1 积分（示例比例）</li>
         <li>订单发生退款时，对应的积分会相应扣回</li>
-        <li>美团、抖音团购券在已接入门店核销后，积分自动到账，无需补登</li>
+        <li>门店暂未入驻，团购消费暂不累计晓艾会积分</li>
       </ul></div>`;
     },
   });
@@ -541,4 +516,17 @@
       ${s.loggedIn ? `<div class="sec"><button class="btn btn-gray btn-block" onclick="XA.act.logout()">退出登录</button></div>` : ''}`;
     },
   });
+  XA.act.plusBuy = () => XA.toast('会员暂不支持购买');
+  XA.page('xahui', {
+    title: '积分会员',
+    render() {
+      const s = XA.state;
+      return `<div class="sec"><div class="vipcard big">
+        <div class="row between"><div class="grow"><div class="vip-brand">晓艾会</div><div class="vip-lv">积分会员</div></div><span class="avatar lg">${esc(s.user.name.slice(0, 1))}</span></div>
+        <div class="vip-ft"><span data-go="points"><b>${s.points}</b> 积分</span><span class="grow"></span><button class="vip-code" data-go="member-code">${icon('qr')}<span>会员码</span></button></div>
+      </div></div>
+      <div class="cells sec"><div class="cell" data-go="points"><span class="cell-label">积分</span><div class="cell-bd">查看积分明细</div>${icon('right', 'faint')}</div><div class="cell" data-go="coupons"><span class="cell-label">优惠券</span><div class="cell-bd">查看优惠券</div>${icon('right', 'faint')}</div></div>`;
+    },
+  });
+  XA.page('plus', { title: '积分会员', render: () => `<div class="sec card">会员暂不支持购买。<button class="btn btn-tonal btn-block mt12" data-go="xahui">查看积分会员</button></div>` });
 })();

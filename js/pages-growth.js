@@ -140,7 +140,7 @@
       const s = XA.state, n = s.loggedIn ? s.user.name : '您的好友';
       return `
       <div class="sec demo-box"><b>演示说明</b><div>这是被邀请的好友点开分享后看到的页面。</div></div>
-      <div class="wl-hero">${ui.avatar(n, 'xl')}<div class="wl-from">${esc(n)} 邀您加入晓艾会</div><h1>送您 ${IV.friendTotal} 元新人礼包</h1><div class="wl-sub">艾灸养生好物 · 附近门店 · 养生课程</div></div>
+      <div class="wl-hero">${ui.avatar(n, 'xl')}<div class="wl-from">${esc(n)} 邀您加入晓艾会</div><h1>送您 ${IV.friendTotal} 元新人礼包</h1><div class="wl-sub">艾灸养生好物 · 附近门店</div></div>
       <div class="sec">${IV.friend.map((c) => `<div class="coupon"><div class="coupon-l"><span><small>¥</small>${c.amount}</span><em>满 ${c.min} 可用</em></div><div class="coupon-r"><div class="bold">${c.name}</div><div class="faint small">${c.scope === 'store' ? '认证门店到店付款时使用' : '线上购物可用'} · 领取后 30 天内有效</div></div></div>`).join('')}</div>
       <div class="sec card"><div class="bold">加入晓艾会，还可以</div><ul class="ppoints">
         <li>${icon('check', 'ic-s')}<span>3 分钟测体质，推荐适合自己的养生方法</span></li>
@@ -184,6 +184,7 @@
       footer: `<div class="row gap12"><div class="grow">拼团价 ${ui.price(g.price, 'lg')}</div><button class="btn btn-wx" style="min-width:8.5rem" onclick="XA.act.groupPay('${pid}','${join || ''}')">微信支付</button></div>`,
     });
   });
+  XA.act.groupStart = (pid) => XA.act.buyExternal(pid);
   XA.act.groupPay = (pid, join) => {
     XA.closeSheet();
     const p = D.product(pid), g = GB[pid], og = join && D.openGroups.find((x) => x.id === join);
