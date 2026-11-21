@@ -201,11 +201,7 @@
   XA.act.ptSheet = (id) => {
     const entry = D.atlasExtras.find(p => p.id === id);
     if (entry) {
-      XA.sheet({ title: entry.name, html: `${locateCard(entry, true)}
-        <div class="row gap12 mt16">
-          <button class="btn btn-tonal grow" onclick="XA.closeSheet();XA.go('acupoint?id=${entry.id}')">查看详情</button>
-          <button class="btn btn-primary grow" onclick="XA.closeSheet();XA.go('timer?ids=${entry.id}')">${icon('timer', 'ic-s')}去计时</button>
-        </div>` });
+      XA.sheet({ title: entry.name, html: `${locateCard(entry, true)}` });
       return;
     }
     const p = D.point(id);
@@ -213,11 +209,7 @@
       title: `${p.name} <span class="faint small">${p.py}</span>`,
       html: `${locateCard(p, true)}
         <div class="kv mt12"><b>保健作用</b><span>${p.benefit}</span></div>
-        <div class="kv warn"><b>注意</b><span>${p.caution}</span></div>
-        <div class="row gap12 mt16">
-          <button class="btn btn-tonal grow" onclick="XA.closeSheet();XA.go('acupoint?id=${p.id}')">查看详情</button>
-          <button class="btn btn-primary grow" onclick="XA.closeSheet();XA.go('timer?ids=${p.id}')">${icon('timer', 'ic-s')}去计时</button>
-        </div>`,
+        <div class="kv warn"><b>注意</b><span>${p.caution}</span></div>`,
     });
   };
   let releaseAtlas;
@@ -243,7 +235,7 @@
       </div>
       ${focus ? `<div class="sec"><button class="btn btn-tonal btn-block" onclick="XA.go('acupoints',true)">查看全部穴位</button></div>` : ''}
       ${ui.sec('按部位查找')}
-      <div class="chips pad">${parts.map((p) => `<button class="chip ${p === part ? 'on' : ''}" onclick="XA.act.acuPart('${p}')">${p}</button>`).join('')}</div>
+      <div class="chips pad acu-parts">${parts.map((p) => `<button class="chip ${p === part ? 'on' : ''}" onclick="XA.act.acuPart('${p}')">${p}</button>`).join('')}</div>
       <div class="cells sec acu-rows">
         ${list.map((p) => `<div class="cell" data-go="acupoint?id=${p.id}"><span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div>${icon('right', 'faint')}</div>`).join('')}
       </div>
@@ -282,7 +274,7 @@
     },
     footer(q) {
       const p = atlasPoint(q.id);
-      return `<button class="btn btn-primary btn-block" data-go="timer?ids=${p.id}">${icon('timer', 'ic-s')} 开始艾灸计时（${p.min || 10} 分钟）</button>`;
+      return `<button class="btn btn-primary btn-block" data-go="timer?ids=${p.id}&title=${encodeURIComponent(p.name)}&force=1">${icon('play', 'ic-s')}开始艾灸</button>`;
     },
   });
 
@@ -306,8 +298,9 @@
       const views = ['front', 'back'].filter((v) => pts.some((x) => x.view === v));
       return `
       <div class="sec card">
-        <div class="small muted">推荐保健穴位组合</div>
-        <div class="h2 mt4">${pts.map((x) => x.name).join(' + ')}</div>
+        <div class="small muted">方案结果</div>
+        <div class="h2 mt4">${esc(s.name)}・推荐配穴</div>
+        <div class="muted mt4">${pts.map((x) => x.name).join('、')}</div>
         <div class="muted mt4">共 ${pts.length} 个穴位，建议约 ${total} 分钟 · 可在计时里改总时长</div>
         <div class="fig-pair">${views.map((v) => `<div>${figure(v, { activeIds: s.pts, clickable: true, labels: false })}<span class="faint small">${v === 'front' ? '正面' : '背面'} · 点圆点查看</span></div>`).join('')}</div>
       </div>
@@ -321,9 +314,16 @@
     },
     footer(q) {
       const s = D.symptom(q.id) || D.symptoms[0];
-      return `<button class="btn btn-primary btn-block" data-go="timer?sym=${s.id}">${icon('timer', 'ic-s')} 按此问题开始艾灸计时</button>`;
+      return `<div class="row gap8 footer-duo"><button class="btn btn-tonal" onclick="XA.act.saveSymPlan('${s.id}')">${icon('leaf', 'ic-s')}保存方案</button><button class="btn btn-primary grow" data-go="timer?sym=${s.id}&title=${encodeURIComponent(s.name + '方案')}&force=1">${icon('play', 'ic-s')}一键开始艾灸</button></div>`;
     },
   });
+  XA.act.saveSymPlan = (id) => {
+    const s = D.symptom(id); if (!s) return;
+    const plans = XA.state.myPlans || (XA.state.myPlans = []);
+    plans.unshift({ id: XA.uid('fp'), name: s.name, ids: s.pts.slice(), at: Date.now(), from: 'sym' });
+    XA.save();
+    XA.toast('已保存到「我的配穴」', true);
+  };
 
   /* ================= 轻音乐（Web Audio 合成氛围音，无需外链资源） ================= */
   const Ambient = (() => {
@@ -417,26 +417,29 @@
 
   const initSetup = (q) => {
     const s = tm();
-    const src = q.sym ? 'sym:' + q.sym : q.ids ? 'ids:' + q.ids : '';
-    /* 同一来源下刷新（改时长/穴位）保留用户编辑；无参数进入则沿用上次方案 */
-    if (s.ready && !q.force && ((src && s._src === src) || !src)) return s;
+    const src = q.sym ? 'sym:' + q.sym : q.ids ? 'ids:' + q.ids + '|' + (q.title || '') : '';
+    /* force 只消费一次：同一来源首次进入重建，之后页内刷新（改时长/加穴位）保留编辑 */
+    const forceNew = !!q.force && s._forceKey !== src;
+    if (s.ready && !forceNew && ((src && s._src === src) || !src)) return s;
     const c = XA.state.constitution;
     let ids, title, from;
     if (q.sym && D.symptom(q.sym)) {
       const sy = D.symptom(q.sym); ids = sy.pts.slice(); title = sy.name; from = 'sym';
     } else if (q.ids) {
-      ids = q.ids.split(',').map((id) => id.trim()).filter(timerPoint); title = ids.length === 1 ? timerPoint(ids[0]).name : '自选穴位'; from = 'ids';
-    } else if (c) {
-      ids = D.types[c.type].pts.slice(); title = c.type + '推荐'; from = 'body';
+      ids = q.ids.split(',').map((id) => id.trim()).filter(timerPoint); title = ids.length === 1 ? timerPoint(ids[0]).name : '临时配穴'; from = 'ids';
     } else {
-      ids = ['zusanli', 'guanyuan']; title = '日常保健'; from = 'default';
+      /* 独立工具：不带任何推荐，从空方案开始，由用户自主添加穴位 */
+      ids = []; title = '临时配穴'; from = 'default';
     }
+    /* 入口可显式指定方案名（如"睡不踏实方案"/"足三里"/我的配穴名）；URLSearchParams 已解码 */
+    if (q.title) title = q.title;
     s.sym = q.sym || '';
     s.title = title;
     s.from = from;
     applySuggested(s, ids);
     s.music = true;
     s._src = src || from;
+    if (q.force) s._forceKey = src;
     s.ready = true;
     return s;
   };
@@ -529,10 +532,51 @@
       XA.closeSheet(); XA.refresh();
     };
   };
+  /* 拖拽排序：把 from 位置的穴位移动到 to 位置 */
+  XA.act.tmReorder = (from, to) => {
+    const s = tm();
+    if (from == null || to == null || from === to || !s.items[from]) return;
+    const [it] = s.items.splice(from, 1);
+    s.items.splice(to, 0, it);
+    XA.refresh();
+  };
+  /* 从全部穴位里多选追加到本次方案 */
+  XA.act.tmAddFav = () => {
+    const s = tm();
+    const parts = ['头颈', '胸腹', '腰背', '上肢', '下肢'];
+    const groups = parts.map((part) => ({ part, pts: D.points.filter((p) => p.part === part) })).filter((g) => g.pts.length);
+    const other = D.points.filter((p) => !parts.includes(p.part));
+    if (other.length) groups.push({ part: '其他', pts: other });
+    const chosen = new Set();
+    const paint = () => {
+      const body = XA.$('#tmAddFavBody');
+      if (!body) return;
+      body.innerHTML = groups.map((g) => `<div class="pick-group"><div class="pick-group-hd">${esc(g.part)}</div><div class="point-picks">${g.pts.map((p) => `<button type="button" class="chip ${chosen.has(p.id) ? 'on' : ''}" onclick="XA.act.tmAddFavToggle('${p.id}')">${esc(p.name)}</button>`).join('')}</div></div>`).join('');
+      const n = XA.$('#tmAddFavN'); if (n) n.textContent = chosen.size;
+    };
+    XA.act.tmAddFavToggle = (id) => { if (chosen.has(id)) chosen.delete(id); else chosen.add(id); paint(); };
+    XA.sheet({
+      title: '添加穴位',
+      titleCls: 'sheet-title',
+      hideClose: true,
+      html: `<div class="faint small mb8">从全部穴位中选择，追加到本次艾灸；已选中的会自动跳过。</div><div id="tmAddFavBody"></div>`,
+      footer: `<button class="btn btn-primary btn-block" onclick="XA.act.tmAddFavOk()">添加（已选 <span id="tmAddFavN">0</span>）</button>`,
+    });
+    paint();
+    XA.act.tmAddFavOk = () => {
+      const exist = new Set((s.items || []).map((x) => x.id));
+      let added = 0;
+      chosen.forEach((id) => { if (!exist.has(id)) { s.items.push({ id, min: timerPoint(id).min }); added++; } });
+      XA.closeSheet();
+      if (added) { s.plan = planForItems(s.items); XA.refresh(); XA.toast('已添加 ' + added + ' 个穴位', true); }
+      else XA.toast('所选穴位已在本次方案中');
+    };
+  };
   XA.act.tmGo = () => XA.needLogin(() => {
     const s = tm();
     if (!s.items || !s.items.length) return XA.toast('请先选择穴位');
     s.track = Math.floor(Math.random() * D.timerTracks.length);
+    XA.tmp.tmAutoStart = true; /* 进入即自动开始计时 */
     XA.go('timer-run');
   }, '登录后才能开始计时');
 
@@ -563,9 +607,21 @@
   const stopRun = () => { if (T && T.iv) { clearInterval(T.iv); T.iv = null; } if (T) T.running = false; };
   const finishAll = () => {
     stopRun(); Ambient.stop(); paintRun();
+    const totalMin = T.items.reduce((a, x) => a + x.min, 0);
+    const planName = (tm().title) || '艾灸';
+    /* 结束自动写入养生日志 */
+    if (XA.state.loggedIn) {
+      const list = Array.isArray(XA.state.journal) ? XA.state.journal : (XA.state.journal = []);
+      list.unshift({
+        id: Date.now(), at: new Date().toISOString(), savedAt: new Date().toISOString(),
+        slot: '', mins: `${totalMin} 分钟`, feel: [], sleep: [], after: [],
+        points: T.items.map((x) => x.id), source: 'timer', title: planName,
+      });
+      XA.save();
+    }
     XA.modal({
       title: '本次艾灸完成',
-      content: `共温灸 ${T.items.length} 个穴位，约 ${T.items.reduce((a, x) => a + x.min, 0)} 分钟。记得喝一杯温水、注意保暖；结束后确认艾条完全熄灭。`,
+      content: `「${esc(planName)}」共温灸 ${T.items.length} 个穴位，约 ${totalMin} 分钟，已记入养生日志。记得喝一杯温水、注意保暖；结束后确认艾条完全熄灭。`,
       confirmText: '好的', cancelText: false,
       onConfirm: () => XA.go('timer', true),
     });
@@ -615,19 +671,16 @@
       const drawn = s.items.map((x) => D.point(x.id)).filter((p) => p && p.x != null);
       const views = ['front', 'back'].filter((v) => drawn.some((p) => p.view === v));
       return `
-      <div class="sec timer-plan-head"><div><span>本次艾灸方案</span><h2>${esc(s.title)}</h2><small>${s.items.length} 个穴位 · ${s.planTouched ? '按所选时长' : '按建议时长'}</small></div><div class="plan-duration"><b>${tmTotal()}</b> 分钟</div></div>
-      ${ui.sec('今天想调理哪方面')}
-      <div class="sym-grid">${D.symptoms.map((sy) => `<button type="button" class="sym ${s.sym === sy.id ? 'on' : ''}" onclick="XA.act.tmSym('${sy.id}')"><span class="sym-ic">${icon(sy.icon)}</span><span>${sy.name}</span></button>`).join('')}</div>
-      ${ui.sec('准备用多长时间')}
-      <div class="sec tm-plans">${D.timerPlans.map((p) => `<button class="tm-plan ${s.plan === p.id ? 'on' : ''}" onclick="XA.act.tmPlan('${p.id}')"><b>${p.name}</b><em>${p.mins} 分钟</em><span>${p.desc}${p.hot ? ' · 常用' : ''}</span></button>`).join('')}</div>
-      ${ui.sec('穴位顺序与时间')}
-      <div class="sec row between" style="margin-top:-4px"><span class="faint small">您可调整每穴分钟数，或改顺序</span><button class="btn btn-tonal btn-sm" onclick="XA.act.tmPick()">选穴位</button></div>
-      <div class="cells sec">
+      <div class="sec timer-plan-head"><div><span>本次艾灸方案</span><h2>${esc(s.title)}</h2><small>${s.items.length} 个穴位 · ${s.planTouched ? '按所选时长' : '按建议时长'} · 拖动可排序</small></div><div class="plan-duration"><b>${tmTotal()}</b> 分钟</div></div>
+      ${ui.sec('本次穴位与时长')}
+      <div class="sec row between" style="margin-top:-4px"><span class="faint small">长按拖动排序，可调整每穴时长</span>${s.from === 'sym' ? '' : `<button class="btn btn-tonal btn-sm" onclick="XA.act.tmAddFav()">${icon('plus', 'ic-s')}添加穴位</button>`}</div>
+      <div class="cells sec" id="tmSortList">
+        ${!s.items.length ? `<div class="cell"><div class="cell-bd muted small">还没有穴位，点右上角「添加穴位」从全部穴位中选取，开始自主搭配。</div></div>` : ''}
         ${s.items.map((it, i) => {
           const p = timerPoint(it.id);
           if (!p) return '';
-          return `<div class="cell tm-edit">
-            <span class="num">${i + 1}</span>
+          return `<div class="cell tm-edit" draggable="true" data-idx="${i}">
+            <span class="tm-grip" aria-label="拖动排序">≡</span>
             <div class="cell-bd" onclick="XA.act.ptSheet('${p.id}')"><div class="bold">${p.name}</div><div class="muted small ell">${p.locate}</div><div class="faint small">建议 ${p.min} 分钟</div></div>
             <div class="tm-ops">
               <div class="stepper sm"><button onclick="XA.act.tmMin(${i},-5)" ${it.min <= 5 ? 'disabled' : ''}>${icon('minus')}</button><span>${it.min}′</span><button onclick="XA.act.tmMin(${i},5)">${icon('plus')}</button></div>
@@ -639,11 +692,32 @@
           </div>`;
         }).join('')}
       </div>
+      ${ui.sec('快捷时长')}
+      <div class="sec tm-plans">${D.timerPlans.map((p) => `<button class="tm-plan ${s.plan === p.id ? 'on' : ''}" onclick="XA.act.tmPlan('${p.id}')"><b>${p.name}</b><em>${p.mins} 分钟</em><span>${p.desc}${p.hot ? ' · 常用' : ''}</span></button>`).join('')}</div>
       ${views.length ? `<div class="sec card figure-card">
         <div class="fig-pair">${views.map((v) => `<div>${figure(v, { activeIds: s.items.map((x) => x.id), clickable: true, labels: false })}<span class="faint small">${v === 'front' ? '正面' : '背面'}</span></div>`).join('')}</div>
         <div class="faint small center mt8">点圆点可预览取穴方法。图谱扩展穴请在列表里点开查看。</div>
       </div>` : ''}
       <div class="sec">${ui.disclaimer('艾灸时请保持通风、远离易燃物；结束后确认艾条完全熄灭。穴位保健不能替代诊疗。')}</div>`;
+    },
+    mounted() {
+      /* HTML5 拖拽排序（桌面/支持拖动的 WebView；触屏用上移按钮兜底） */
+      const list = XA.$('#tmSortList');
+      if (list) {
+        let dragIdx = null;
+        list.querySelectorAll('.tm-edit[draggable]').forEach((el) => {
+          el.addEventListener('dragstart', (e) => { dragIdx = Number(el.dataset.idx); el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+          el.addEventListener('dragend', () => { el.classList.remove('dragging'); dragIdx = null; });
+          el.addEventListener('dragenter', () => { if (dragIdx != null) el.classList.add('drag-over'); });
+          el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+          el.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+          el.addEventListener('drop', (e) => {
+            e.preventDefault(); el.classList.remove('drag-over');
+            const to = Number(el.dataset.idx);
+            if (dragIdx != null && to !== dragIdx) XA.act.tmReorder(dragIdx, to);
+          });
+        });
+      }
     },
     footer() {
       return `<div class="grow"><div class="bold">约 ${tmTotal()} 分钟 · ${tm().items.length} 个穴位</div><div class="small faint">计时开始后自动播放伴奏</div></div><button class="btn btn-primary" style="min-width:8.5rem" onclick="XA.act.tmGo()">${icon('play', 'ic-s')}进入计时</button>`;
@@ -685,6 +759,8 @@
     },
     mounted() {
       paintRun();
+      /* 从「进入计时」进入时直接开始，无需再点一次开始 */
+      if (XA.tmp.tmAutoStart) { XA.tmp.tmAutoStart = false; if (T && !T.running) XA.act.tmToggle(); }
     },
     unmount() { stopRun(); Ambient.stop(); },
   });

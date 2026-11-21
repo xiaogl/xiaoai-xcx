@@ -176,6 +176,7 @@
     ],
     likes: {},
     favs: {},
+    myPlans: [], // 我的配穴：用户从穴位收藏保存的艾灸组合 [{id,name,ids,at}]
     follows: {}, // 已关注的内容账号 id
     courses: [],
     membership: null, // 晓艾家会籍（门店自己的付费会籍）
@@ -398,7 +399,7 @@
     XA.$$('[data-r]', el).forEach((b) => (b.onclick = () => { el._close(); if (b.dataset.r === '1') done && done(); }));
   };
   XA.needLogin = (fn, reason) => { if (XA.state.loggedIn) fn(); else XA.login(fn, reason); };
-  const LOOK_PAGES = new Set(['home', 'video', 'community', 'store', 'me', 'search', 'catalog', 'article', 'note', 'course', 'lesson', 'product', 'brand', 'creator', 'topic', 'acupoints', 'acupoint', 'symptoms', 'symptom', 'store-detail', 'solar', 'profile', 'settings', 'notfound', 'journal', 'journal-history', 'review', 'pointfav', 'ask', 'timer', 'timer-run', 'moxa-origin', 'moxa-guide', 'moxa-ban', 'vsearch', 'csearch', 'vfollows']);
+  const LOOK_PAGES = new Set(['home', 'video', 'community', 'store', 'me', 'search', 'catalog', 'goods', 'formula', 'article', 'note', 'course', 'lesson', 'product', 'brand', 'creator', 'topic', 'acupoints', 'acupoint', 'symptoms', 'symptom', 'store-detail', 'solar', 'profile', 'settings', 'notfound', 'journal', 'journal-history', 'review', 'pointfav', 'ask', 'timer', 'timer-run', 'moxa-origin', 'moxa-guide', 'moxa-ban', 'vsearch', 'csearch', 'vfollows']);
   const pageOf = (path) => {
     const h = String(path || '').replace(/^#\/?/, '');
     const i = h.indexOf('?');
@@ -480,6 +481,8 @@
 
   const render = (dir) => {
     const p = parse(location.hash);
+    /* 艾灸计时是独立工具：从入口进入（非页内刷新）且无预置穴位时重置为空方案，不沿用上次的症状方案 */
+    if (p.name === 'timer' && dir !== 'none' && !p.q.ids && !p.q.sym) XA.tmp.tm = null;
     let def = routes[p.name] || routes.notfound;
     const course = p.name === 'lesson' ? XA.data.course(p.q.c) : null;
     if (['course', 'lesson', 'my-courses'].includes(p.name) || (p.name === 'product' && !XA.data.product(p.q.id)) ||

@@ -12,35 +12,31 @@
 
   /* ================= 我的 ================= */
   const careMe = (s) => {
-    const lv = XA.level(), next = s.appts.filter((a) => a.status === 'booked').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
     const cups = s.coupons.filter((c) => !c.used).length;
-    const pending = s.orders.filter((o) => o.status === 'toship' || o.status === 'shipped').length;
+    const notifyBind = `XA.subscribe(['活动开始提醒','会员活动提醒'],function(ok){XA.toast(ok?'已开启通知':'未开启',ok)})`;
     return `
       <div class="me-hd care-me">
         <div class="care-banner">${icon('users', 'ic-s')}<span class="grow ell">长辈模式 · 常用入口</span><button class="link" onclick="XA.setCare(false)">退出</button></div>
         <div class="me-card club-card">
-          <button class="club-heading" data-go="xahui"><strong>晓艾会</strong><span>我的会员卡 ${icon('right','ic-xs')}</span></button>
-          <div class="me-user" data-go="xahui">
-            ${ui.avatar(s.user.name, 'xl')}
-            <div class="grow"><div class="me-name ell">${s.user.name}</div><span class="lv-chip">积分会员</span></div>
+          <div class="club-plate">
+            <div class="me-top" style="flex-direction:row;align-items:center">
+              <div class="me-user">
+                ${ui.avatar(s.user.name, 'xl')}
+                <div class="grow"><div class="me-name ell" style="color:#fff">${s.user.name}</div><div class="me-member-tag">普通会员</div></div>
+              </div>
+              <button class="vip-code" data-go="member-code">${icon('qr')}<span>会员码</span></button>
+            </div>
           </div>
-          <button class="btn btn-primary btn-block mt12" data-go="member-code">${icon('qr')}出示会员码</button>
         </div>
         <div class="me-assets care-assets">
-          <button data-go="points"><b>${s.points}</b><span>积分</span></button>
-          <button data-go="coupons"><b>${cups}</b><span>优惠券</span></button>
-          <button data-go="cart"><b>${s.cart.reduce((a, c) => a + c.qty, 0)}</b><span>购物车</span></button>
+          <button data-go="points"><b>${s.points}</b><span>积分兑换</span></button>
+          <button data-go="goods"><b class="ic">${icon('bag')}</b><span>艾品甄选</span></button>
+          <button data-go="invite"><b class="ic">${icon('gift')}</b><span>邀请好友</span></button>
         </div>
       </div>
-      <div class="sec card" data-go="${next ? 'appt?id=' + next.id : 'appts'}">
-        <div class="row between"><span class="bold">我的预约</span><span class="more" data-go="appts">全部${icon('right', 'ic-s')}</span></div>
-        ${next ? `<div class="next-appt"><div class="grow"><div class="appt-time ell">${XA.d.nice(next.date)} ${next.time}</div><div class="muted small ell">${D.storeOf(next.storeId).name}</div></div><span class="btn btn-primary btn-sm">核销码</span></div>` :
-          `<div class="next-appt"><div class="grow muted">您还没有预约</div><span class="btn btn-tonal btn-sm" data-go="store">查看门店</span></div>`}
-      </div>
       <div class="cells sec"><button class="cell" data-go="service-bills">到店账单与余额</button>
-        <div class="cell" data-go="orders"><span class="cell-ic">${icon('bag')}</span><div class="cell-bd">我的订单</div>${pending ? `<span class="tag tag-orange">${pending} 待收</span>` : ''}${icon('right', 'faint')}</div>
-        <div class="cell" data-go="xahui"><span class="cell-ic gold">${icon('crown')}</span><div class="cell-bd">积分会员</div>${icon('right', 'faint')}</div>
-        <div class="cell" onclick="XA.wecom()"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">联系养生顾问</div>${icon('right', 'faint')}</div>
+        <div class="cell" onclick="${notifyBind}"><span class="cell-ic">${icon('bell')}</span><div class="cell-bd">消息通知</div>${icon('right', 'faint')}</div>
+        <div class="cell" data-go="chat"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">在线客服</div>${icon('right', 'faint')}</div>
         <div class="cell" data-go="settings"><span class="cell-ic gray">${icon('settings')}</span><div class="cell-bd">设置</div>${icon('right', 'faint')}</div>
       </div>`;
   };
@@ -53,7 +49,7 @@
         return `<div class="me-hd"><div class="row gap12" onclick="XA.login()"><span class="avatar xl guest">${icon('user')}</span><div class="grow"><div class="me-name">点击登录</div><div class="muted small">登录后可查看订单、预约和晓艾会权益</div></div></div></div>
         <div class="sec"><button class="btn btn-wx btn-block" onclick="XA.login()">微信手机号快捷登录</button></div>
         <div class="cells sec"><button class="cell" data-go="service-bills">到店账单与余额</button>
-          <div class="cell" onclick="XA.wecom()"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">联系养生顾问</div>${icon('right', 'faint')}</div>
+          <div class="cell" data-go="chat"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">在线客服</div>${icon('right', 'faint')}</div>
           <div class="cell" data-go="settings"><span class="cell-ic gray">${icon('settings')}</span><div class="cell-bd">设置</div>${icon('right', 'faint')}</div>
         </div>`;
       }
@@ -66,51 +62,32 @@
         ['third', 'receipt', '第三方订单', '京东·淘宝等', 0],
       ];
       const cups = s.coupons.filter((c) => !c.used).length;
-      const bens = [['coin', '我的积分', 'points'], ['ticket', '优惠券', 'coupons'], ['qr', '会员码', 'member-code'], ['gift', '分享有礼', 'growth'], ['crown', '积分会员', 'xahui']];
+      const notifyBind = `XA.subscribe(['活动开始提醒','会员活动提醒'],function(ok){XA.toast(ok?'已开启通知':'未开启',ok)})`;
       return `
       <div class="me-hd">
         <div class="me-card club-card">
-          <button class="club-heading" data-go="xahui"><strong>晓艾会</strong><span>我的会员卡 ${icon('right','ic-xs')}</span></button>
-          <div class="me-top">
-            <div class="me-user" data-go="xahui">
-              ${ui.avatar(s.user.name, 'xl')}
-              <div class="grow"><div class="me-name ell">${s.user.name}</div><span class="lv-chip">积分会员</span></div>
+          <div class="club-plate">
+            <div class="me-top" style="flex-direction:row;align-items:center">
+              <div class="me-user">
+                ${ui.avatar(s.user.name, 'xl')}
+                <div class="grow"><div class="me-name ell" style="color:#fff">${s.user.name}</div><div class="me-member-tag">普通会员</div></div>
+              </div>
+              <button class="vip-code" data-go="member-code">${icon('qr')}<span>会员码</span></button>
             </div>
           </div>
-          <div class="me-bens">${bens.map((b) => `<button data-go="${b[2]}"><span class="me-ben-ic">${icon(b[0])}</span><span>${/^[\u4e00-\u9fff]{4}$/.test(b[1]) ? b[1].slice(0, 2) + '<br>' + b[1].slice(2) : b[1]}</span></button>`).join('')}</div>
         </div>
         <div class="me-assets">
-          <button data-go="points"><b>${s.points}</b><span>积分</span></button>
-          <button data-go="coupons"><b>${cups}</b><span>优惠券</span></button>
-          <button data-go="member-code"><b class="ic">${icon('qr')}</b><span>会员码</span></button>
-          <button data-go="growth"><b class="ic">${icon('users')}</b><span>分享有礼</span></button>
+          <button data-go="points"><b>${s.points}</b><span>积分兑换</span></button>
+          <button data-go="goods"><b class="ic">${icon('bag')}</b><span>艾品甄选</span></button>
+          <button data-go="invite"><b class="ic">${icon('gift')}</b><span>邀请好友</span></button>
         </div>
-      </div>
-      <div class="sec card">
-        <div class="row between" data-go="orders"><span class="bold">我的订单</span><span class="more">全部订单${icon('right', 'ic-s')}</span></div>
-        <button class="btn btn-tonal btn-block mt12" data-go="service-bills">到店账单与余额</button><div class="otypes mt12">${oi.map((o) => `<button class="otype otype-${o[0]}" data-go="orders?type=${o[0]}"><span class="otype-ic">${icon(o[1])}${o[4] ? `<em class="badge">${o[4]}</em>` : ''}</span><b>${o[2]}</b><span>${o[3]}</span></button>`).join('')}</div>
-      </div>
-      <div class="sec card" data-go="${next ? 'appt?id=' + next.id : 'appts'}">
-        <div class="row between"><span class="bold">我的预约</span><span class="more" data-go="appts">全部预约${icon('right', 'ic-s')}</span></div>
-        ${next ? `<div class="next-appt"><div class="grow"><div class="appt-time ell">${XA.d.nice(next.date)} ${next.time}</div><div class="muted small ell">${D.storeOf(next.storeId).name} · ${D.service(next.serviceId).name}</div></div><span class="btn btn-primary btn-sm">核销码</span></div>` :
-          `<div class="next-appt"><div class="grow muted">您还没有预约</div><span class="btn btn-tonal btn-sm" data-go="store">查看门店</span></div>`}
-      </div>
-      <div class="sec">
-        <div class="card group claim-entry" data-go="claim"><span class="group-ic">${icon('scan')}</span><div class="grow"><div class="bold">扫码补积分</div><div class="muted small ell">京东、淘宝、小店包裹里的积分码</div></div><button class="btn btn-tonal btn-sm" onclick="event.stopPropagation();XA.act.scanPoints()">去扫码</button></div>
-      </div>
-      ${ui.sec('我的服务')}
-      <div class="cells sec">
-        <div class="cell" data-go="xahui"><span class="cell-ic gold">${icon('crown')}</span><div class="cell-bd">积分会员<div class="faint small">查看积分与会员码</div></div>${icon('right', 'faint')}</div>
-        <div class="cell" data-go="profile"><span class="cell-ic">${icon('body')}</span><div class="cell-bd">体质档案</div><span class="faint small">${s.constitution ? s.constitution.type : '未测试'}</span>${icon('right', 'faint')}</div>
-        <div class="cell" data-go="favs"><span class="cell-ic">${icon('star')}</span><div class="cell-bd">我的收藏</div>${icon('right', 'faint')}</div>
-        <div class="cell" data-go="cart"><span class="cell-ic">${icon('cart')}</span><div class="cell-bd">购物车</div><span class="faint small">${s.cart.length ? s.cart.reduce((a, c) => a + c.qty, 0) + ' 件' : ''}</span>${icon('right', 'faint')}</div>
       </div>
       ${ui.sec('更多')}
       <div class="cells sec">
-        <div class="cell" data-go="growth"><span class="cell-ic warm">${icon('gift')}</span><div class="cell-bd">分享有礼<div class="faint small">邀请 · 拼团 · 红包</div></div>${icon('right', 'faint')}</div>
-        <div class="cell" data-go="promoter"><span class="cell-ic gold">${icon('megaphone')}</span><div class="cell-bd">推广中心<div class="faint small">${s.promoter.status === 'active' ? '可提现 ¥' + XA.money(s.promoter.balance) : '分享好物，获得佣金'}</div></div>${icon('right', 'faint')}</div>
-        <div class="cell" onclick="XA.wecom()"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">联系养生顾问</div><span class="faint small">企业微信</span>${icon('right', 'faint')}</div>
-        <div class="cell" data-go="settings"><span class="cell-ic gray">${icon('settings')}</span><div class="cell-bd">设置</div><span class="faint small">${s.careMode ? '长辈模式已开' : '大字、通知'}</span>${icon('right', 'faint')}</div>
+        <div class="cell" data-go="invite"><span class="cell-ic warm">${icon('gift')}</span><div class="cell-bd">邀请好友<div class="faint small">好友入会，双方都得积分</div></div>${icon('right', 'faint')}</div>
+        <div class="cell" onclick="${notifyBind}"><span class="cell-ic">${icon('bell')}</span><div class="cell-bd">消息通知<div class="faint small">活动提醒</div></div>${icon('right', 'faint')}</div>
+        <div class="cell" data-go="chat"><span class="cell-ic">${icon('headset')}</span><div class="cell-bd">在线客服<div class="faint small">在线时间 09:00 - 21:00</div></div>${icon('right', 'faint')}</div>
+        <div class="cell" data-go="settings"><span class="cell-ic gray">${icon('settings')}</span><div class="cell-bd">设置</div>${icon('right', 'faint')}</div>
       </div>
       <div class="end">晓艾 · 关注人的状态，而不是人的数据</div>`;
     },
@@ -259,17 +236,55 @@
     XA.toast(`签到成功 +5 积分，已连续 ${s.sign.streak} 天`, true);
     XA.refresh();
   };
+  /* ================= 积分兑换 =================
+   * 只做兑换：展示可用积分 + 每件「N 积分 + ¥X」，不放赚积分/签到/明细。
+   */
+  XA.act.exchange = (id) => XA.needLogin(() => {
+    const it = D.exchangeOf(id), p = D.product(it.pid), s = XA.state;
+    if (s.points < it.pts) return XA.toast(`积分不足，还差 ${it.pts - s.points} 分`);
+    XA.modal({
+      title: '确认兑换',
+      content: `<div class="xch-confirm"><b>${esc(p.short)}</b><span class="xch-confirm-pt">${it.pts} 积分 + ¥${XA.money(it.cash)}</span><span class="faint small">兑换后剩余 ${s.points - it.pts} 积分</span></div>`,
+      confirmText: '确认兑换',
+      onConfirm: () => {
+        XA.addPoints(-it.pts, `积分兑换 · ${p.short}`, 0);
+        s.exchanges = s.exchanges || [];
+        s.exchanges.unshift({ id, at: new Date().toISOString() });
+        XA.save();
+        XA.toast('兑换成功，3 个工作日内发出', true);
+        XA.refresh();
+      },
+    });
+  });
   XA.page('points', {
-    title: '我的积分',
+    title: '积分兑换',
     render() {
-      const s = XA.state, signed = s.sign.last === XA.d.key(new Date());
-      return `<div class="pts-hd"><div class="small">可用积分</div><div class="pts-num">${s.points}</div><div class="small">100 积分 = 1 元，下单时可抵扣（即将开放）</div>
-        <button class="btn ${signed ? 'btn-gray' : 'btn-white'} mt12" onclick="XA.act.sign()">${signed ? `今日已签到 · 连续 ${s.sign.streak} 天` : '签到领 5 积分'}</button></div>
-      ${ui.sec('赚积分')}
-      <div class="cells sec">${D.earn.map((e) => `<div class="cell" ${e.act ? `onclick="XA.act.${e.act}()"` : `data-go="${e.go}"`}><div class="cell-bd">${e.name}</div><span class="c-primary bold">${e.pts}</span>${icon('right', 'faint')}</div>`).join('')}</div>
-      ${ui.sec('积分明细')}
-      <div class="cells sec">${s.ledger.map((l) => `<div class="cell"><div class="cell-bd"><div>${l.note}</div><div class="faint small">${XA.d.full(l.at)}</div></div><span class="bold ${l.change > 0 ? 'c-primary' : 'c-price'}">${l.change > 0 ? '+' : ''}${l.change}</span></div>`).join('')}</div>
-      <div class="end">每一笔积分变动都有记录，可随时查看</div>`;
+      const s = XA.state;
+      const done = new Set((s.exchanges || []).map((x) => x.id));
+      return `<div class="sec card xch-hd">
+        <div class="row between gap12">
+          <div class="xch-hd-l"><div class="faint small">可用积分</div><div class="xch-num">${s.points}</div></div>
+          <div class="xch-rate"><b>${D.exchangeRate} 积分 = ¥1</b><span>积分抵现，差额补现金</span></div>
+        </div>
+      </div>
+      ${ui.sec('可兑换')}
+      <div class="sec xch-list">${D.exchange.map((it) => {
+        const p = D.product(it.pid) || {};
+        const lack = it.pts - s.points;
+        return `<div class="xch-item">
+          ${ui.cover(p, 'xch-img')}
+          <div class="xch-bd">
+            <div class="xch-title">${esc(p.title || '')}</div>
+            <div class="xch-market faint small">市场价<span class="xch-was">¥${XA.money(p.price)}</span></div>
+            <div class="xch-price"><b>${it.pts}</b><span>积分</span><i>+</i><b>¥${XA.money(it.cash)}</b></div>
+          </div>
+          ${done.has(it.id) ? `<span class="xch-btn is-done">已兑换</span>`
+            : lack > 0 ? `<span class="xch-btn is-off">差 ${lack} 分</span>`
+            : `<button class="xch-btn" onclick="XA.act.exchange('${it.id}')">兑换</button>`}
+        </div>`;
+      }).join('')}</div>
+      <div class="sec faint small">兑换后 3 个工作日内发出，售出不支持退换；积分抵扣部分不开具发票。</div>
+      <div class="end">积分只在兑换时抵扣，不兑现金</div>`;
     },
   });
 
@@ -491,6 +506,45 @@
     },
   });
 
+  /* ================= 在线客服（演示对话，非企微；回复延时模拟真人） ================= */
+  const chatMsgs = () => (XA.tmp.chatMsgs || (XA.tmp.chatMsgs = [
+    { from: 'cs', text: '您好，这里是晓艾在线客服，很高兴为您服务～', at: '09:02' },
+    { from: 'cs', text: '客服在线时间 09:00 - 21:00，非在线时段留言我们会在上线后回复。', at: '09:02' },
+  ]));
+  const chatTime = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  XA.act.csSend = () => {
+    const input = XA.$('#csInput');
+    if (!input) return;
+    const text = (input.value || '').trim();
+    if (!text) return XA.toast('请输入您想咨询的内容');
+    input.value = '';
+    const msgs = chatMsgs();
+    msgs.push({ from: 'me', text, at: chatTime() });
+    XA.refresh();
+    const typing = XA.$('#csTyping');
+    if (typing) typing.hidden = false;
+    setTimeout(() => {
+      const m = chatMsgs();
+      m.push({ from: 'cs', text: '已收到您的消息，客服正在为您查询，请稍候片刻。', at: chatTime() });
+      const t = XA.$('#csTyping'); if (t) t.hidden = true;
+      XA.refresh();
+      const box = XA.$('#csBox'); if (box) box.scrollTop = box.scrollHeight;
+    }, 1800);
+  };
+  XA.page('chat', {
+    title: '在线客服',
+    render() {
+      const msgs = chatMsgs();
+      const bubbles = msgs.map((m) => `<div class="cs-msg ${m.from === 'me' ? 'me' : ''}"><div class="cs-bubble">${esc(m.text)}</div><div class="cs-time">${esc(m.at)}</div></div>`).join('');
+      return `<div class="cs-wrap">
+        <div class="cs-info">${icon('headset')}<div class="grow"><div class="bold">晓艾在线客服</div><div class="faint small">在线时间 09:00 - 21:00 · 当前在线</div></div><span class="cs-online"></span></div>
+        <div class="cs-box" id="csBox">${bubbles}<div class="cs-msg" id="csTyping" hidden><div class="cs-bubble cs-typing">客服正在输入…</div></div></div>
+        <div class="cs-input"><input id="csInput" class="input" type="text" placeholder="请输入您想咨询的内容" onkeydown="if(event.key==='Enter')XA.act.csSend()"><button class="btn btn-primary" onclick="XA.act.csSend()">发送</button></div>
+      </div>`;
+    },
+    mounted() { const box = XA.$('#csBox'); if (box) box.scrollTop = box.scrollHeight; },
+  });
+
   /* ================= 设置 ================= */
   XA.act.toggle = (k) => { XA.state[k] = !XA.state[k]; XA.save(); XA.refresh(); };
   XA.act.logout = () => XA.modal({ title: '退出登录？', confirmText: '退出', danger: true, onConfirm: () => { localStorage.removeItem('xa-member:'+XA.demoSpace); XA.state.loggedIn = false; XA.save(); XA.go('me'); } });
@@ -504,12 +558,11 @@
       </div>
       <div class="cells sec">
         <div class="cell"><div class="cell-bd"><div>用流量时自动播放视频</div><div class="muted small">关闭后，仅在 Wi-Fi 下自动播放</div></div>${sw(s.autoPlayCell, "XA.act.toggle('autoPlayCell')")}</div>
-        <div class="cell" onclick="XA.subscribe(['预约到店提醒','订单发货通知','活动开始提醒'],function(ok){XA.toast(ok?'已开启通知':'未开启',ok)})"><div class="cell-bd"><div>消息通知</div><div class="faint small">预约、发货、活动提醒</div></div>${icon('right', 'faint')}</div>
       </div>
       <div class="cells sec">
-        <div class="cell" onclick="XA.act.editDelivery()"><div class="cell-bd">收货地址</div>${icon('right', 'faint')}</div>
         <div class="cell" data-go="profile"><div class="cell-bd">体质档案与隐私</div><span class="faint small">可查看、删除</span>${icon('right', 'faint')}</div>
-        <div class="cell" onclick="XA.toast('用户协议与隐私政策（演示）')"><div class="cell-bd">用户协议与隐私政策</div>${icon('right', 'faint')}</div>
+        <div class="cell" onclick="XA.toast('用户协议（演示）')"><div class="cell-bd">用户协议</div>${icon('right', 'faint')}</div>
+        <div class="cell" onclick="XA.toast('隐私政策（演示）')"><div class="cell-bd">隐私政策</div>${icon('right', 'faint')}</div>
         <div class="cell"><div class="cell-bd">关于晓艾</div><span class="faint small">原型 V1.4</span></div>
       </div>
       <div class="sec demo-box"><b>演示说明</b><div class="muted small mt4">原型数据保存在本机浏览器，您可一键恢复到初始状态。</div><button class="btn btn-sm btn-outline mt8" onclick="XA.modal({title:'重置演示数据？',content:'订单、预约、积分等将恢复初始状态。',confirmText:'重置',danger:true,onConfirm:XA.reset})">重置演示数据</button></div>
@@ -525,7 +578,7 @@
         <div class="row between"><div class="grow"><div class="vip-brand">晓艾会</div><div class="vip-lv">积分会员</div></div><span class="avatar lg">${esc(s.user.name.slice(0, 1))}</span></div>
         <div class="vip-ft"><span data-go="points"><b>${s.points}</b> 积分</span><span class="grow"></span><button class="vip-code" data-go="member-code">${icon('qr')}<span>会员码</span></button></div>
       </div></div>
-      <div class="cells sec"><div class="cell" data-go="points"><span class="cell-label">积分</span><div class="cell-bd">查看积分明细</div>${icon('right', 'faint')}</div><div class="cell" data-go="coupons"><span class="cell-label">优惠券</span><div class="cell-bd">查看优惠券</div>${icon('right', 'faint')}</div></div>`;
+      <div class="cells sec"><div class="cell" data-go="points"><span class="cell-label">积分</span><div class="cell-bd">积分兑换</div>${icon('right', 'faint')}</div><div class="cell" data-go="coupons"><span class="cell-label">优惠券</span><div class="cell-bd">查看优惠券</div>${icon('right', 'faint')}</div></div>`;
     },
   });
   XA.page('plus', { title: '积分会员', render: () => `<div class="sec card">会员暂不支持购买。<button class="btn btn-tonal btn-block mt12" data-go="xahui">查看积分会员</button></div>` });

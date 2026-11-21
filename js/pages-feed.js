@@ -353,7 +353,7 @@
           <div class="dy-cover">${XA.art('season', 'dusk', 'dy-cover-art')}</div>
           <div class="dy-hd">
             <div class="social-av dy-av" style="background:${avTone(p)}">${avHtml(p)}</div>
-            <div class="dy-name">${esc(p.name)}</div>
+            <div class="dy-idmeta"><div class="dy-name">${esc(p.name)}</div><div class="dy-verify">${icon('check', 'ic-xs')}已认证</div></div>
           </div>
           <div class="dy-bar">
             <div class="dy-stats">
@@ -365,7 +365,7 @@
               <button type="button" class="dy-edit-inline" data-go="vprofile">编辑资料</button>
             </div>
           </div>
-          <div class="dy-bio">${esc(p.bio || '写一句介绍')}</div>
+          ${bioBlock(p.bio)}
           <div class="dy-tabs">
             <button type="button" class="${pane === 'work' ? 'on' : ''}" onclick="XA.act.vMinePane('work')">作品</button>
             <button type="button" class="${pane === 'fav' ? 'on' : ''}" onclick="XA.act.vMinePane('fav')">收藏</button>
@@ -495,7 +495,7 @@
     render(q) {
       const kw = (q.q || '').trim();
       const box = `<div class="search-top">
-        <div class="searchbar input">${icon('search')}<input id="vkw" type="search" placeholder="搜视频、用户" value="${esc(kw)}" onkeydown="if(event.key==='Enter')XA.act.vSearch(this.value)"></div>
+        <div class="searchbar input">${icon('search')}<input id="vkw" type="search" autofocus placeholder="搜视频、用户" value="${esc(kw)}" onkeydown="if(event.key==='Enter')XA.act.vSearch(this.value)"></div>
         <button type="button" class="dy-go" onclick="XA.act.vSearch(document.getElementById('vkw').value)">搜索</button>
       </div>`;
       const pool = D.videos.filter((v) => v.slot !== 'mine').concat(XA.state.myVideos || []);
@@ -509,7 +509,7 @@
       const his = XA.state.vSearchHistory || [];
       const discover = `${his.length ? `<div class="xhs-block"><div class="xhs-hd"><b>历史记录</b><button type="button" aria-label="清空" onclick="XA.act.vClearHist()">${icon('trash', 'ic-s')}</button></div><div class="xhs-his">${his.map((h) => `<button type="button" onclick="XA.act.vSearch('${esc(h)}')">${esc(h)}</button>`).join('')}</div></div>` : ''}
         <div class="xhs-block"><div class="xhs-hd"><b>猜你想搜</b><button type="button" onclick="XA.act.vGuess()">${icon('refresh', 'ic-s')}</button></div><div class="xhs-guess">${guesses.map((t) => `<button type="button" onclick="XA.act.vSearch('${esc(t)}')">${esc(t)}</button>`).join('')}</div></div>
-        <div class="xhs-block xhs-block-flush"><div class="xhs-hd"><b>热门榜单</b><span class="dy-rank-tag">抖音热榜</span></div><div class="dy-hotgrid">${hotCols.map((col) => `<div class="dy-hotcol">${col.join('')}</div>`).join('')}</div></div>`;
+        <div class="xhs-block xhs-block-flush"><div class="xhs-hd"><b>热门榜单</b></div><div class="dy-hotgrid">${hotCols.map((col) => `<div class="dy-hotcol">${col.join('')}</div>`).join('')}</div></div>`;
       if (!kw) return `${box}${discover}`;
       const tab = XA.tmp.vSearchTab === 'video' || XA.tmp.vSearchTab === 'user' ? XA.tmp.vSearchTab : 'all';
       const tabs = `<div class="dy-result-tabs">${[['all', '综合'], ['video', '视频'], ['user', '用户']].map(([id, name]) => `<button type="button" class="${tab === id ? 'on' : ''}" onclick="XA.act.vSearchTab('${id}')">${name}</button>`).join('')}</div>`;
@@ -619,7 +619,7 @@
       const tabBtn = (id, name) => `<button type="button" class="${tab === id ? 'on' : ''}" onclick="XA.act.cTab('${id}')">${name}</button>`;
       const pills = `<button type="button" class="topic-chip ${topic ? '' : 'on'}" onclick="XA.act.cTopic('')">热门</button>`
         + hot.map((t) => `<button type="button" class="topic-chip ${topic === t.id ? 'on' : ''}" onclick="XA.act.cTopic('${t.id}')"># ${esc(t.name)}</button>`).join('');
-      const pane = XA.tmp.cMinePane === 'fav' || XA.tmp.cMinePane === 'like' ? XA.tmp.cMinePane : 'note';
+      const pane = XA.tmp.cMinePane === 'fav' || XA.tmp.cMinePane === 'like' ? XA.tmp.cMinePane : 'fav';
       let shown = list;
       let empty = tab === 'follow' ? '关注账号后，这里会显示他们的笔记' : '这个话题下还没有笔记';
       let me = '';
@@ -644,7 +644,7 @@
           <div class="dy-cover">${XA.art('leaf', 'dusk', 'dy-cover-art')}</div>
           <div class="dy-hd">
             <div class="social-av dy-av" style="background:${avTone(p)}">${avHtml(p)}</div>
-            <div class="dy-name">${esc(p.name)}</div>
+            <div class="dy-idmeta"><div class="dy-name">${esc(p.name)}</div><div class="dy-verify">${icon('check', 'ic-xs')}已认证</div></div>
           </div>
           <div class="dy-bar">
             <div class="dy-stats">
@@ -658,7 +658,6 @@
           </div>
           ${bioBlock(p.bio)}
           <div class="xhs-tabs">
-            <button type="button" class="${pane === 'note' ? 'on' : ''}" onclick="XA.act.cMinePane('note')">笔记</button>
             <button type="button" class="${pane === 'fav' ? 'on' : ''}" onclick="XA.act.cMinePane('fav')">收藏</button>
             <button type="button" class="${pane === 'like' ? 'on' : ''}" onclick="XA.act.cMinePane('like')">赞过</button>
           </div>
@@ -680,9 +679,9 @@
   const bioBlock = (text) => {
     const raw = text || '';
     const lines = raw.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(graphemes(line).length / 18)), 0);
-    const long = !!raw && lines > 2;
+    const long = !!raw && lines > 3;
     const open = !!XA.tmp.cBioOpen;
-    return `<div class="dy-bio dy-bio-pre ${long && !open ? 'fold' : ''}">${esc(raw || '写一句介绍')}</div>${long ? `<button type="button" class="dy-bio-more" onclick="XA.act.cBioOpen()">${open ? '收起' : '展开'}</button>` : ''}`;
+    return `<div class="dy-bio dy-bio-pre ${long && !open ? 'fold3' : ''}">${esc(raw || '写一句介绍')}</div>${long ? `<button type="button" class="dy-bio-more" onclick="XA.act.cBioOpen()">${open ? '收起' : '更多'}</button>` : ''}`;
   };
   XA.act.openTopic = (id) => { XA.tmp.cTab = 'pick'; XA.tmp.cTopic = id || ''; XA.go('community'); };
   XA.act.cSearch = (kw) => {
@@ -705,7 +704,7 @@
     render(q) {
       const kw = (q.q || '').trim();
       const box = `<div class="search-top">
-        <div class="searchbar input">${icon('search')}<input id="ckw" type="search" placeholder="搜索笔记，用户" value="${esc(kw)}" onkeydown="if(event.key==='Enter')XA.act.cSearch(this.value)"></div>
+        <div class="searchbar input">${icon('search')}<input id="ckw" type="search" autofocus placeholder="搜索笔记，用户" value="${esc(kw)}" onkeydown="if(event.key==='Enter')XA.act.cSearch(this.value)"></div>
         <button type="button" class="xhs-go" style="color:#111" onclick="XA.act.cSearch(document.getElementById('ckw').value)">搜索</button>
       </div>`;
       const notes = pubNotes().concat(mineNotes());
@@ -919,7 +918,6 @@
       </article>
       ${p ? ui.sec('笔记中的好物') + `<div class="feed">${ui.productCard(p, 'post')}</div>` : ''}
       ${store ? ui.sec('笔记中的门店', '全部门店', 'store') + `<div class="feed">${ui.storeCard(store)}</div>` : ''}
-      <div class="sec">${ui.groupCard()}</div>
       <div class="sec">${ui.disclaimer()}</div>`;
     },
     mounted() {

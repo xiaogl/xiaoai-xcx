@@ -392,7 +392,7 @@
     ];
     return `
       <div class="home-hd care-hd">
-        <div class="home-brand"><span class="logo-dot">艾</span><span class="wordmark">晓艾</span>${homeLogin()}</div>
+        <div class="home-brand"><span class="logo-dot">艾</span><span class="wordmark" style="color:var(--primary)">晓艾</span>${homeLogin()}</div>
         <div class="care-banner">${icon('users', 'ic-s')}<span>长辈模式 · 只保留常用功能</span><button class="link" onclick="XA.setCare(false)">退出</button></div>
       </div>
       ${nearestEntry()}
@@ -402,7 +402,6 @@
       ${homePlacements()}
       ${ui.sec('常用好物')}
       <div class="feed care-goods">${goods.map((p) => ui.productCard(p, 'feed')).join('')}</div>
-      <div class="sec"><button class="btn btn-primary btn-block" onclick="XA.wecom('联系养生顾问')">${icon('headset')}联系养生顾问</button></div>
       <div class="end">需要更多功能时，您可在设置里关闭长辈模式</div>`;
   };
 
@@ -412,20 +411,19 @@
       if (XA.isCare()) return careHome();
       const tabs = ['intro', 'all', 'p', 'solar'];
       const tab = tabs.includes(XA.tmp.homeTab) ? XA.tmp.homeTab : 'intro';
-      const tools = [['test', 'quiz', '体质测试', 'a'], ['acupoints', 'body', '穴位图谱', 'b'], ['symptoms', 'target', '对症找穴', 'c'], ['timer', 'timer', '艾灸计时', 'd']];
-      const plays = [['formula', 'leaf', '配穴方案', 'a'], ['journal', 'calendar', '养生日志', 'b'], ['pointfav', 'star', '穴位收藏', 'c'], ['ask', 'info', '养生问答', 'd']];
+      const tools = [['test', 'quiz', '体质测试', '辨体质', 'a'], ['acupoints', 'body', '穴位图谱', '查穴位', 'b'], ['symptoms', 'target', '对症找穴', '知配穴', 'c'], ['timer', 'timer', '艾灸计时', '自动记录', 'd']];
+      const plays = [['formula', 'book', '配穴方案', '成套配穴', 'a'], ['review', 'calendar', '体质复盘', '调养记录', 'b'], ['goods', 'bag', '艾品甄选', '养生好物', 'c'], ['ask', 'info', '养生问答', '答疑科普', 'd']];
       const chips = [['intro', '介绍'], ['all', '笔记'], ['p', '好物'], ['solar', '节气']];
       const feed = tab === 'intro' ? introHome() : tab === 'solar' ? solarHome() : `<div class="feed">${feedHtml()}</div><div class="end">已经到底了</div>`;
       return `
       <div class="home-hd">
-        <div class="home-brand"><span class="logo-dot">艾</span><span class="wordmark">晓艾</span></div>
+        <div class="home-brand"><span class="logo-dot">艾</span><span class="wordmark" style="color:var(--primary)">晓艾</span></div>
         ${locationChip()}
         <button class="searchbar" data-go="search">${icon('search')}<span>搜穴位、商品、文章</span></button>
       </div>
       ${activityBanner()}
       <div class="tools-board">
-        <div class="tools">${tools.map((t) => `<button class="tool" data-go="${t[0]}"><span class="tool-ic tool-${t[3]}">${icon(t[1])}</span><span>${t[2]}</span></button>`).join('')}</div>
-        <div class="tools">${plays.map((t) => `<button class="tool" data-go="${t[0]}"><span class="tool-ic tool-${t[3]}">${icon(t[1])}</span><span>${t[2]}</span></button>`).join('')}</div>
+        <div class="tools">${tools.concat(plays).map((t) => `<button class="tool" data-go="${t[0]}"><span class="tool-ic tool-${t[4]}">${icon(t[1])}</span><span class="tool-name">${t[2]}</span><span class="tool-sub">${t[3]}</span></button>`).join('')}</div>
       </div>
       ${homePlacements()}
       ${ui.sec(XA.state.constitution ? '调养参考' : '为您推荐')}
@@ -754,36 +752,53 @@
     XA.toast(on ? '已收藏' : '已取消收藏');
     XA.refresh();
   }, '登录后才能收藏穴位');
+  XA.act.formulaTab = (t) => { XA.tmp.formulaTab = t; XA.refresh(); };
+  XA.act.favPart = (p) => { XA.tmp.favPart = p; XA.refresh(); };
   XA.page('formula', {
     title: '配穴方案',
     render() {
-      const c = XA.state.constitution;
-      if (!c || !D.types[c.type]) return `${ui.empty('完成体质测试后，会按结果为您推荐艾灸穴位组合', '去测试', 'test')}<div class="sec">${ui.disclaimer('未测试前不生成个人方案。')}</div>`;
-      const type = D.types[c.type];
-      const pts = type.pts.map((id) => D.point(id)).filter(Boolean);
-      const videoIds = {
-        平和质: ['v1', 'v5', 'v3'],
-        气虚质: ['v1', 'v4', 'v5'],
-        阳虚质: ['v2', 'v1', 'v4'],
-        阴虚质: ['v1', 'v3', 'v5'],
-        痰湿质: ['v3', 'v2', 'v1'],
-        湿热质: ['v3', 'v4', 'v1'],
-        血瘀质: ['v3', 'v1', 'v5'],
-        气郁质: ['v3', 'v5', 'v1'],
-        特禀质: ['v1', 'v2', 'v5'],
-      }[c.type] || D.videos.map((v) => v.id);
-      const videos = videoIds.map((id) => D.videoOf(id)).filter(Boolean);
-      return `<div class="sec card">
-        <div class="small muted">根据体质测试</div>
-        <div class="ccard-type">${esc(c.type)}</div>
-        <div class="muted small mt4">${esc(type.desc)}</div>
-      </div>
-      ${ui.sec('推荐穴位组合')}
-      <div class="cells sec">${pts.map((p) => `<div class="cell" data-go="acupoint?id=${p.id}"><span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="bold">${esc(p.name)}</div><div class="muted small">${esc(p.locate)}</div><div class="faint small mt4">建议温灸 ${p.min} 分钟 · ${esc(p.benefit)}</div></div>${icon('right','faint')}</div>`).join('')}</div>
-      <div class="sec"><button class="btn btn-primary btn-block" data-go="timer?ids=${pts.map((p) => p.id).join(',')}&force=1">按这个组合开始艾灸</button></div>
-      ${ui.sec('调养参考')}
-      <div class="feed">${videos.map((v) => `<button type="button" class="fcard" onclick="XA.act.openVideo('${v.id}')">${ui.art(v.art, 'fcard-img')}<div class="fcard-bd"><div class="fcard-title">${esc(v.title)}</div><div class="fcard-tags"><span class="tag tag-outline">视频</span><span class="faint small">${esc(v.author)}</span></div><div class="fcard-ft"><span class="faint small">${XA.wan(v.likes)} 赞</span></div></div></button>`).join('')}</div>
-      <div class="sec">${ui.disclaimer()}</div>`;
+      const tab = XA.tmp.formulaTab === 'plan' ? 'plan' : 'fav';
+      const planCount = (XA.state.myPlans || []).length;
+      const tabsHtml = `<div class="tabs"><button type="button" class="${tab === 'fav' ? 'on' : ''}" onclick="XA.act.formulaTab('fav')">收藏穴位</button><button type="button" class="${tab === 'plan' ? 'on' : ''}" onclick="XA.act.formulaTab('plan')">我的方案${planCount ? ' · ' + planCount : ''}</button></div>`;
+      if (tab === 'plan') {
+        const planRow = (name, ids, opt = {}) => {
+          const names = ids.map((id) => D.point(id)).filter(Boolean).map((p) => p.name).join('、');
+          const go = `timer?ids=${ids.join(',')}&title=${encodeURIComponent(name)}&force=1`;
+          return `<div class="cell"><div class="cell-bd" data-go="${go}"><div class="bold">${esc(name)}</div><div class="muted small ell">${esc(names)}</div><div class="faint small">${ids.length} 个穴位 · 点此开始艾灸</div></div>${opt.mine ? `<button class="icon-btn" aria-label="删除方案" onclick="XA.act.delMyPlan('${opt.id}')">${icon('trash')}</button>` : `<button class="icon-btn" title="收藏该方案" aria-label="收藏该方案" onclick="XA.act.saveNamedPlan('${esc(name)}','${ids.join(',')}')">${icon('plus')}</button>`}</div>`;
+        };
+        /* 对症配方直接显示配方名称（兼容旧数据去掉"方案"后缀） */
+        const dispName = (pl) => {
+          if (pl.from === 'sym') return pl.name;
+          const m = D.symptoms.find((sy) => sy.name + '方案' === pl.name);
+          return m ? m.name : pl.name;
+        };
+        const mine = (XA.state.myPlans || []).map((pl) => planRow(dispName(pl), pl.ids || [], { mine: true, id: pl.id })).join('');
+        return `${tabsHtml}<div class="sec tipbox">${icon('info')}<span>收纳您保存的配穴方案，多选收藏穴位后保存；点击方案一键带入计时，记录自动存入养生日志。</span></div>
+        ${ui.sec(`我的配穴${planCount ? ' · ' + planCount : ''}`)}<div class="cells sec">${mine || '<div class="cell"><div class="cell-bd muted small">还没有保存的方案。切到「收藏穴位」多选穴位后保存。</div></div>'}</div>
+        <div class="sec">${ui.disclaimer()}</div>`;
+      }
+      /* 收藏穴位：星标收藏 + 部位筛选 + 多选生成方案；下方展示未收藏穴位方便收藏 */
+      const favPart = XA.tmp.favPart || '全部';
+      const parts = ['全部', '头颈', '胸腹', '腰背', '上肢', '下肢'];
+      const inPart = (p) => favPart === '全部' || p.part === favPart;
+      const saved = D.points.filter((p) => XA.state.favs[pointKey(p.id)] && inPart(p));
+      const rest = D.points.filter((p) => !XA.state.favs[pointKey(p.id)] && inPart(p));
+      const savedTotal = D.points.filter((p) => XA.state.favs[pointKey(p.id)]).length;
+      const multi = XA.tmp.favMulti, sel = favMulti() || [];
+      const star = (p) => `<button class="point-star ${XA.state.favs[pointKey(p.id)] ? 'on' : ''}" aria-label="${XA.state.favs[pointKey(p.id)] ? '取消收藏' : '收藏'}${esc(p.name)}" onclick="event.stopPropagation();XA.act.pointFav('${p.id}')">${icon('star')}</button>`;
+      const check = (p) => `<span class="fav-check ${sel.includes(p.id) ? 'on' : ''}">${sel.includes(p.id) ? icon('check', 'ic-xs') : ''}</span>`;
+      const row = (p) => multi
+        ? `<div class="cell fav-multi-row" onclick="XA.act.favToggleSel('${p.id}')">${check(p)}<span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div></div>`
+        : `<div class="cell" data-go="acupoint?id=${p.id}"><span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div>${star(p)}</div>`;
+      const partChips = `<div class="chips pad acu-parts">${parts.map((p) => `<button type="button" class="chip ${p === favPart ? 'on' : ''}" onclick="XA.act.favPart('${p}')">${p}</button>`).join('')}</div>`;
+      const favHead = `<div class="sec fav-multi-bar"><span class="bold">${savedTotal ? `已收藏 ${savedTotal} 个` : '您还没有收藏'}</span><span class="grow"></span>${multi
+        ? `<button type="button" class="link-btn" onclick="XA.act.favMultiOff()">取消</button>`
+        : `<button type="button" class="link-btn" onclick="XA.act.favMultiOn()">多选</button>`}</div>`;
+      const selTip = multi ? `<div class="sec faint small">已选 ${sel.length} 个穴位，选好后保存为我的方案。</div>` : '';
+      const selActions = multi && sel.length ? `<div class="sec fav-sel-actions"><button type="button" class="btn btn-tonal btn-sm" onclick="XA.act.saveSelPlan()">${icon('leaf', 'ic-s')}保存配方</button><button type="button" class="btn btn-primary btn-sm" onclick="XA.act.multiStart()">${icon('play', 'ic-s')}按此组合艾灸</button></div>` : '';
+      const savedHtml = saved.length ? saved.map(row).join('') : `<div class="cell"><div class="cell-bd muted small">${favPart === '全部' ? '还没有收藏穴位，点下方星标收藏常用穴位。' : `「${esc(favPart)}」还没有收藏穴位。`}</div></div>`;
+      const restHtml = rest.length ? rest.map(row).join('') : '';
+      return `${tabsHtml}${favHead}${partChips}${selTip}${selActions}<div class="cells sec acu-rows">${savedHtml}</div>${restHtml ? `${ui.sec('全部穴位（点星标收藏 / 取消）')}<div class="cells sec acu-rows">${restHtml}</div>` : ''}<div class="sec">${ui.disclaimer()}</div>`;
     },
   });
   const showTags = (value) => Array.isArray(value) ? value.filter(Boolean).join('、') : String(value || '').trim();
@@ -794,7 +809,8 @@
     if (item.slot) return `${day} · ${item.slot}`;
     return `${day} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
-  const journalTabs = (name) => `<div class="tabs"><button type="button" class="${name === 'journal' ? 'on' : ''}" onclick="XA.go('journal',true)">养生日志</button><button type="button" class="${name === 'review' ? 'on' : ''}" onclick="XA.go('review',true)">体质复盘</button></div>`;
+  /* 养生日志入口已并入体质复盘，只保留体质复盘 */
+  const journalTabs = () => `<div class="tabs"><button type="button" class="on" onclick="XA.go('review',true)">体质复盘</button></div>`;
   const journalChips = (group, items, single, grid) => {
     const form = journalForm();
     return `<div class="chips wrap ${grid || ''}">${items.map((item) => {
@@ -1203,7 +1219,7 @@
       const pointPicks = parts.map((part) => `<div class="point-part">${esc(part)}</div><div class="point-picks">${D.atlasPoints.filter((p) => p.part === part).map((p) => `<button type="button" class="chip ${form.points && form.points[p.id] ? 'on' : ''}" onclick="XA.act.journalPick('points','${p.id}',this,false)">${esc(p.name)}</button>`).join('')}</div>`).join('');
       const minChips = JOURNAL_MINS.map((n) => `<button type="button" class="chip ${form.mins === String(n) ? 'on' : ''}" data-min="${n}" onclick="XA.act.journalMin(${n})">${n}</button>`).join('');
       const pickedMin = form.mins === '' ? 0 : Math.max(0, Math.min(120, Number(form.mins) || 0));
-      return `${journalTabs('journal')}
+      return `${journalTabs()}
       <div class="sec card journal-write">
         <div class="bold">记一条</div>
         <div class="muted small mt4">请您选择时间和标签即可，不必打字。如需记细一些，可展开下面的模块。</div>
@@ -1226,7 +1242,7 @@
   XA.page('review', {
     title: '体质复盘',
     render() {
-      return `${journalTabs('review')}${reviewHero()}<div class="sec">${ui.disclaimer('结果供日常参考，不能替代专业诊疗。如有身体不适，请及时就医。')}</div>`;
+      return `${journalTabs()}${reviewHero()}${journalBoard(journalList())}<div class="sec">${ui.disclaimer('结果供日常参考，不能替代专业诊疗。如有身体不适，请及时就医。')}</div>`;
     },
   });
   XA.act.histYear = (year) => { XA.tmp.histYear = Number(year); XA.tmp.histMonth = ''; XA.tmp.histMonths = null; XA.refresh(); };
@@ -1296,14 +1312,84 @@
       <div class="sec">${ui.disclaimer('本指南只介绍形态与使用场景差异，帮助居家选择思路，不指向具体商品，也不能替代专业指导。')}</div>`;
     },
   });
+  XA.act.saveFavPlan = () => {
+    const ids = D.points.filter((p) => XA.state.favs[pointKey(p.id)]).map((p) => p.id);
+    if (!ids.length) return XA.toast('请先收藏至少一个穴位');
+    const plans = XA.state.myPlans || (XA.state.myPlans = []);
+    plans.unshift({ id: XA.uid('fp'), name: '收藏组合 ' + (plans.length + 1), ids, at: Date.now() });
+    XA.save();
+    XA.toast('已保存到「我的配穴」', true);
+  };
+  XA.act.delMyPlan = (id) => {
+    XA.state.myPlans = (XA.state.myPlans || []).filter((p) => p.id !== id);
+    XA.save();
+    XA.refresh();
+    XA.toast('已删除该配穴方案');
+  };
+  /* 把系统方案保存到我的配穴 */
+  XA.act.saveNamedPlan = (name, idsCsv) => {
+    const ids = idsCsv.split(',').filter(Boolean);
+    const plans = XA.state.myPlans || (XA.state.myPlans = []);
+    plans.unshift({ id: XA.uid('fp'), name, ids, at: Date.now() });
+    XA.save();
+    XA.toast('已保存到「我的配穴」', true);
+  };
+  /* 我的方案：展示所有已保存配穴组合 */
+  XA.act.showMyPlans = () => {
+    const plans = XA.state.myPlans || [];
+    const html = plans.length ? plans.map((pl) => {
+      const names = (pl.ids || []).map((id) => D.point(id)).filter(Boolean).map((p) => p.name).join('、');
+      return `<div class="cell"><div class="cell-bd" onclick="XA.closeSheet();XA.go('timer?ids=${(pl.ids || []).join(',')}&title=${encodeURIComponent(pl.name)}&force=1')"><div class="bold">${esc(pl.name)}</div><div class="muted small ell">${esc(names)}</div><div class="faint small">${(pl.ids || []).length} 个穴位 · 点此按该组合艾灸</div></div><button class="icon-btn" aria-label="删除方案" onclick="XA.act.delMyPlanSheet('${pl.id}')">${icon('trash')}</button></div>`;
+    }).join('') : '<div class="faint small center" style="padding:24px">还没有保存的配穴方案，可在多选穴位后保存。</div>';
+    XA.sheet({ title: '我的方案', titleCls: 'sheet-title', html: `<div class="cells">${html}</div>` });
+  };
+  XA.act.delMyPlanSheet = (id) => {
+    XA.state.myPlans = (XA.state.myPlans || []).filter((p) => p.id !== id);
+    XA.save();
+    XA.closeSheet();
+    XA.act.showMyPlans();
+    XA.toast('已删除该配穴方案');
+  };
+  const favMulti = () => (XA.tmp.favMulti ? (XA.tmp.favSel || (XA.tmp.favSel = [])) : null);
+  XA.act.favMultiOn = () => { XA.tmp.favMulti = true; XA.tmp.favSel = []; XA.refresh(); };
+  XA.act.favMultiOff = () => { XA.tmp.favMulti = false; XA.tmp.favSel = []; XA.refresh(); };
+  XA.act.favToggleSel = (id) => {
+    const sel = favMulti(); if (!sel) return;
+    const i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else sel.push(id);
+    XA.refresh();
+  };
+  XA.act.saveSelPlan = () => {
+    const sel = favMulti() || [];
+    if (!sel.length) return XA.toast('请先选择穴位');
+    const plans = XA.state.myPlans || (XA.state.myPlans = []);
+    plans.unshift({ id: XA.uid('fp'), name: '我的配穴 ' + (plans.length + 1), ids: sel.slice(), at: Date.now() });
+    XA.save();
+    XA.act.favMultiOff();
+    XA.toast('已保存为我的配穴方案', true);
+  };
+  XA.act.multiStart = () => {
+    const sel = favMulti() || [];
+    if (!sel.length) return XA.toast('请先选择穴位');
+    XA.act.favMultiOff();
+    XA.go('timer?ids=' + sel.join(',') + '&title=' + encodeURIComponent('临时配穴') + '&force=1');
+  };
   XA.page('pointfav', {
     title: '穴位收藏',
     render() {
       const saved = D.points.filter((p) => XA.state.favs[pointKey(p.id)]);
       const rest = D.points.filter((p) => !XA.state.favs[pointKey(p.id)]);
+      const multi = XA.tmp.favMulti, sel = favMulti() || [];
       const star = (p) => `<button class="point-star ${XA.state.favs[pointKey(p.id)] ? 'on' : ''}" aria-label="${XA.state.favs[pointKey(p.id)] ? '取消收藏' : '收藏'}${esc(p.name)}" onclick="event.stopPropagation();XA.act.pointFav('${p.id}')">${icon('star')}</button>`;
-      const row = (p) => `<div class="cell" data-go="acupoint?id=${p.id}"><span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div>${star(p)}</div>`;
-      return `${ui.sec(saved.length ? `已收藏 ${saved.length} 个` : '您还没有收藏')}<div class="cells sec acu-rows">${saved.map(row).join('') || '<div class="cell"><div class="cell-bd muted small">点下方星标，把常用穴位留在这里。</div></div>'}</div>${ui.sec('全部穴位')}<div class="cells sec acu-rows">${rest.map(row).join('') || '<div class="cell"><div class="cell-bd muted small">常用穴位都已收藏。</div></div>'}</div>`;
+      const check = (p) => `<span class="fav-check ${sel.includes(p.id) ? 'on' : ''}">${sel.includes(p.id) ? icon('check', 'ic-xs') : ''}</span>`;
+      const row = (p) => multi
+        ? `<div class="cell fav-multi-row" onclick="XA.act.favToggleSel('${p.id}')">${check(p)}<span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div></div>`
+        : `<div class="cell" data-go="acupoint?id=${p.id}"><span class="cell-ic">${icon('target')}</span><div class="cell-bd"><div class="acu-name"><b>${esc(p.name)}</b><span>${esc(p.part)}</span></div><div class="muted small">${esc(p.locate)}</div></div>${star(p)}</div>`;
+      const multiBar = `<div class="sec fav-multi-bar">${multi
+        ? `<button type="button" class="link-btn" onclick="XA.act.favMultiOff()">取消</button><span class="grow faint small">已选 ${sel.length} 个穴位</span>`
+        : `<button type="button" class="link-btn" onclick="XA.act.favMultiOn()">多选</button><span class="grow"></span><button type="button" class="link-btn" onclick="XA.act.showMyPlans()">我的方案${(XA.state.myPlans || []).length ? ' · ' + XA.state.myPlans.length : ''} ${icon('right', 'ic-xs')}</button>`}</div>`;
+      const selActions = multi && sel.length ? `<div class="sec fav-sel-actions"><button type="button" class="btn btn-tonal btn-sm" onclick="XA.act.saveSelPlan()">${icon('leaf', 'ic-s')}保存配方</button><button type="button" class="btn btn-primary btn-sm" onclick="XA.act.multiStart()">${icon('play', 'ic-s')}按此组合艾灸</button></div>` : '';
+      return `${multiBar}${selActions}${ui.sec(saved.length ? `已收藏 ${saved.length} 个` : '您还没有收藏')}<div class="cells sec acu-rows">${saved.map(row).join('') || '<div class="cell"><div class="cell-bd muted small">点下方星标，把常用穴位留在这里。</div></div>'}</div>${ui.sec('全部穴位')}<div class="cells sec acu-rows">${rest.map(row).join('') || '<div class="cell"><div class="cell-bd muted small">常用穴位都已收藏。</div></div>'}</div>`;
     },
   });
   const QUIZ_LIMIT = 10;

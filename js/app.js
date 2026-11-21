@@ -17,10 +17,10 @@
   if (wechatPreview) {
     document.documentElement.classList.add('wechat-preview');
   } else {
-    /* 手机框等比缩放：屏幕固定 390×844，窗口放不下时整体缩小，不改变长宽比 */
+    /* 右侧预览固定模拟真机视口 375×812（19.5:9 全面屏）；窗口放不下时整体等比缩小 */
     const real = window.matchMedia('(max-width: 520px) and (pointer: coarse)');
     const fit = () => {
-      const k = real.matches ? 1 : Math.min(1, (window.innerHeight - 32) / 864, (window.innerWidth - 16) / 410);
+      const k = real.matches ? 1 : Math.min(1, (window.innerWidth - 64) / 375, (window.innerHeight - 32) / 812);
       document.documentElement.style.setProperty('--k', Math.max(0.3, k).toFixed(4));
     };
     fit();

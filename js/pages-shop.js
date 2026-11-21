@@ -35,6 +35,43 @@
     const list = catalogList(f);
     return `${ui.sec(esc(f.sub || (f.category === '全部' ? '全部商品' : f.category)))}${list.length ? `<div class="feed">${list.map(p => ui.productCard(p, 'feed')).join('')}</div>` : ui.empty('该条件下暂无商品')}`;
   };
+  /* ---------- 好物：元气地带 / 明大妈 商品随机混合展示，购买跳转各自小程序 ---------- */
+  XA.act.goodsFilter = (key, val) => {
+    if (key === '__reset') { XA.tmp.goodsFilter = { brand: '', cat: '', kw: '' }; XA.refresh(); return; }
+    const f = XA.tmp.goodsFilter || (XA.tmp.goodsFilter = { brand: '', cat: '', kw: '' });
+    f[key] = val;
+    if (key === 'brand' || key === 'cat') { const input = XA.$('#goodsKw'); if (input) f.kw = input.value.trim(); }
+    XA.refresh();
+  };
+  XA.act.goodsSearch = (kw) => { kw = String(kw || '').trim(); XA.tmp.goodsFilter = Object.assign(XA.tmp.goodsFilter || {}, { kw }); XA.refresh(); };
+  XA.page('goods', {
+    title: '艾品好选',
+    render() {
+      const all = D.products.filter((p) => ['yqdd', 'mdm'].includes(p.brand) && p.curated !== false);
+      const f = XA.tmp.goodsFilter || (XA.tmp.goodsFilter = { brand: '', cat: '', kw: '' });
+      const brands = [...new Set(all.map((p) => p.brand))];
+      const cats = [...new Set(all.map((p) => p.category))];
+      /* 进入页面时洗牌一次，本次浏览内顺序保持稳定 */
+      if (!XA.tmp.goodsOrder || XA.tmp.goodsOrderKey !== all.map((p) => p.id).join(',')) {
+        XA.tmp.goodsOrder = all.slice().sort(() => Math.random() - 0.5).map((p) => p.id);
+        XA.tmp.goodsOrderKey = all.map((p) => p.id).join(',');
+      }
+      let list = XA.tmp.goodsOrder.map((id) => D.product(id)).filter(Boolean);
+      if (f.brand) list = list.filter((p) => p.brand === f.brand);
+      if (f.cat) list = list.filter((p) => p.category === f.cat);
+      if (f.kw) { const kw = f.kw.toLowerCase(); list = list.filter((p) => (p.title + p.short + (p.kw || '') + p.category).toLowerCase().includes(kw)); }
+      const chip = (key, val, label, on) => `<button type="button" class="chip ${on ? 'on' : ''}" onclick="XA.act.goodsFilter('${key}','${esc(val)}')">${esc(label)}</button>`;
+      return `<div class="sec tipbox">${icon('info')}<span>好物由元气地带、明大妈提供，晓艾仅做选品与展示；点商品看详情，下单与售后在对应品牌小程序完成。</span></div>
+      <div class="sec goods-filter">
+        <div class="searchbar input">${icon('search')}<input id="goodsKw" type="search" placeholder="搜商品名称、品类" value="${esc(f.kw)}" onkeydown="if(event.key==='Enter')XA.act.goodsSearch(this.value)"></div>
+        <button type="button" class="btn btn-primary btn-block mt8" onclick="XA.act.goodsSearch(document.getElementById('goodsKw').value)">搜索</button>
+        <div class="goods-filter-row"><span class="goods-filter-label">品牌</span><div class="chips wrap">${chip('brand','','全部',!f.brand)}${brands.map((b) => chip('brand', b, D.brands[b]?.name || b, f.brand === b)).join('')}</div></div>
+        <div class="goods-filter-row"><span class="goods-filter-label">品类</span><div class="chips wrap">${chip('cat','','全部',!f.cat)}${cats.map((c) => chip('cat', c, c, f.cat === c)).join('')}</div></div>
+      </div>
+      ${f.brand || f.cat || f.kw ? `<div class="sec row between"><span class="faint small">找到 ${list.length} 件好物</span><button type="button" class="link" onclick="XA.act.goodsFilter('__reset')">清除筛选</button></div>` : ''}
+      ${list.length ? `<div class="pgrid">${list.map((p) => ui.productGrid(p, 'goods')).join('')}</div>` : `<div class="sec card center muted">没有符合条件的好物</div>`}`;
+    },
+  });
   XA.page('catalog', {
     title: '商品分类',
     render(q) {

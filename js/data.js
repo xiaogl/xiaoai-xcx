@@ -544,6 +544,20 @@
     { name: '第三方订单扫码补登', pts: '1 元 = 1 分', g: '1 元 = 1', go: 'claim' },
   ];
 
+  /* ---------- 积分兑换（演示）：积分抵现 + 少量现金 ----------
+   * 100 积分 = ¥1；每件商品标「N 积分 + ¥X」，兑换时积分抵现、差额补现金。
+   */
+  D.exchangeRate = 100;
+  D.exchange = [
+    { id: 'x1', pid: 'p1', pts: 800, cash: 9.9 },
+    { id: 'x2', pid: 'p3', pts: 600, cash: 9.9 },
+    { id: 'x3', pid: 'p4', pts: 900, cash: 12 },
+    { id: 'x4', pid: 'p5', pts: 500, cash: 9.9 },
+    { id: 'x5', pid: 'p2', pts: 1500, cash: 19 },
+    { id: 'x6', pid: 'p6', pts: 400, cash: 6.6 },
+  ];
+  D.exchangeOf = (id) => D.exchange.find((x) => x.id === id);
+
   /* ---------- 晓艾会 · Plus 付费权益包（权益最大化覆盖） ---------- */
   D.plus = {
     price: 365, days: 365, gifts: 3,

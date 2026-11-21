@@ -125,7 +125,6 @@
       </div>
       ${ui.sec('活动规则')}
       <div class="sec card">${inviteRules()}</div>
-      <div class="sec tipbox" data-go="promoter">${icon('megaphone')}<span>想赚现金佣金？申请成为推广员，好友下单您有佣金</span>${icon('right', 'ic-s')}</div>
       <div class="sec demo-box"><b>演示说明</b><div>正式版由好友的真实行为触发。这里可以模拟：</div>
         <div class="row gap8 mt8" style="flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="XA.act.inviteSim('join')">模拟一位好友入会</button><button class="btn btn-sm btn-outline" onclick="XA.act.inviteSim('first')">模拟好友完成首单</button></div>
       </div>
@@ -338,7 +337,6 @@
       ${row('warm', 'ticket', '下单红包', `每笔订单送 ${RP.count} 个红包，分享给好友，您也得券`, rpo ? `最近一单已有 ${(s.redpack[rpo.id] || { n: 0 }).n} / ${RP.need} 位好友领取` : '', rpo ? '去分享' : '去逛逛', rpo ? `onclick="XA.act.redpack('${rpo.id}')"` : 'data-go="home"')}
       ${ui.sec('长期一起做')}
       ${row('', 'headset', '加入养生交流群', '企业微信社群：顾问答疑、群内专享活动', '', '去加入', `onclick="XA.wecom('加入养生交流群')"`)}
-      ${row('gold', 'megaphone', '成为推广员', '好友通过您的分享下单，您获得现金佣金', s.promoter.status === 'active' ? `可提现 ¥${XA.money(s.promoter.balance)}` : '需申请开通', '推广中心', 'data-go="promoter"')}
       ${ui.sec('规则说明')}
       <div class="sec card">${inviteRules()}</div>
       <div class="sec demo-box"><b>体系说明（演示）</b>

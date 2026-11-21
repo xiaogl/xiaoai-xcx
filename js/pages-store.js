@@ -78,7 +78,9 @@
       low: (a, b) => minPrice(a) - minPrice(b),
       high: (a, b) => Number(b.linked) - Number(a.linked) || minPrice(b) - minPrice(a),
     };
-    return list.sort((a, b) => Number(!!a.soon) - Number(!!b.soon) || by[f.sort](a, b));
+    /* 定位在武汉时，把自营旗舰店（晓艾家）置顶到第一家；其它城市不置顶 */
+    const wuhanFlagship = (s) => (D.located.status === 'granted' && D.located.city === '武汉' && s.city === '武汉' && s.brand === 'xaj') ? 1 : 0;
+    return list.sort((a, b) => wuhanFlagship(b) - wuhanFlagship(a) || Number(!!a.soon) - Number(!!b.soon) || by[f.sort](a, b));
   }
   /* 门店卡片（列表、笔记挂载等处复用）。已接入：可预约；未接入：只有基础信息 + 来源 */
   ui.storeCard = (s, hl) => {
@@ -92,7 +94,7 @@
           <div class="scard-sub">可查看官方团购套餐与到店服务</div>
           <div class="scard-foot">
             <span></span>
-            <span class="row gap6"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();XA.act.goMeituan('${s.id}')">查看团购 ${icon('right','ic-xs')}</button><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();XA.act.navTo('${s.id}')">导航</button></span>
+            <span class="row gap6"><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();XA.act.navTo('${s.id}')">${icon('nav', 'ic-xs')}导航</button><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();XA.act.goMeituan('${s.id}')">查看团购 ${icon('right','ic-xs')}</button></span>
           </div>
         </div>
       </div>`;
